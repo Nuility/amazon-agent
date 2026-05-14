@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户管理智能体 - Agent UI</title>
+    <title>User Management Agent</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,215 +11,206 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
-                    <div class="logo-icon">🤖</div>
-                    <span class="logo-text">用户管理智能体</span>
+                    <div class="logo-icon">AI</div>
+                    <span class="logo-text">User Management Agent</span>
                 </div>
             </div>
-            
+
             <nav class="sidebar-nav">
                 <div class="nav-section">
-                    <div class="nav-title">功能菜单</div>
+                    <div class="nav-title">Workspace</div>
                     <a href="#" class="nav-item active" data-view="chat">
-                        <span class="nav-icon">💬</span>
-                        <span>对话交互</span>
+                        <span class="nav-icon">C</span>
+                        <span>Chat</span>
                     </a>
                     <a href="#" class="nav-item" data-view="users">
-                        <span class="nav-icon">👥</span>
-                        <span>用户管理</span>
+                        <span class="nav-icon">U</span>
+                        <span>Users</span>
                     </a>
                     <a href="#" class="nav-item" data-view="stats">
-                        <span class="nav-icon">📊</span>
-                        <span>数据统计</span>
+                        <span class="nav-icon">S</span>
+                        <span>Statistics</span>
+                    </a>
+                    <a href="#" class="nav-item" data-view="agent-lab">
+                        <span class="nav-icon">A</span>
+                        <span>Agent Lab</span>
                     </a>
                 </div>
-                
+
                 <div class="nav-section">
-                    <div class="nav-title">系统设置</div>
+                    <div class="nav-title">Settings</div>
                     <a href="#" class="nav-item" data-view="llm-config">
-                        <span class="nav-icon">🧠</span>
-                        <span>大模型配置</span>
-                    </a>
-                </div>
-                
-                <div class="nav-section">
-                    <div class="nav-title">快捷操作</div>
-                    <a href="#" class="nav-item" data-action="quick-create">
-                        <span class="nav-icon">➕</span>
-                        <span>快速创建</span>
-                    </a>
-                    <a href="#" class="nav-item" data-action="quick-query">
-                        <span class="nav-icon">🔍</span>
-                        <span>快速查询</span>
+                        <span class="nav-icon">L</span>
+                        <span>LLM Config</span>
                     </a>
                 </div>
             </nav>
-            
+
             <div class="sidebar-footer">
                 <div class="status-indicator">
                     <span class="status-dot online"></span>
-                    <span class="status-text">系统运行中</span>
+                    <span class="status-text">Service online</span>
                 </div>
             </div>
         </aside>
-        
+
         <main class="main-content">
             <header class="top-bar">
                 <div class="top-bar-left">
-                    <h1 class="page-title">对话交互</h1>
+                    <h1 class="page-title">Chat</h1>
                 </div>
                 <div class="top-bar-right">
                     <button class="btn btn-outline" id="clearChat">
-                        <span>清空对话</span>
+                        <span>Clear Chat</span>
                     </button>
                     <button class="btn btn-primary" id="refreshBtn">
-                        <span>刷新数据</span>
+                        <span>Refresh</span>
                     </button>
                 </div>
             </header>
-            
+
             <div class="content-area" id="chatView">
                 <div class="chat-container">
                     <div class="chat-messages" id="chatMessages">
                         <div class="message assistant">
-                            <div class="message-avatar">🤖</div>
+                            <div class="message-avatar">AI</div>
                             <div class="message-content">
                                 <div class="message-text">
-                                    您好！我是用户管理智能体，可以帮您完成以下操作：
+                                    Welcome to the user management workspace.
                                     <ul>
-                                        <li><strong>创建用户</strong> - 创建新的用户账号</li>
-                                        <li><strong>查询用户</strong> - 查看用户列表或单个用户</li>
-                                        <li><strong>更新用户</strong> - 修改用户信息</li>
-                                        <li><strong>删除用户</strong> - 删除用户账号</li>
-                                        <li><strong>统计分析</strong> - 查看用户统计数据</li>
+                                        <li><strong>create user</strong> to add a user</li>
+                                        <li><strong>query all users</strong> to list users</li>
+                                        <li><strong>stats</strong> to inspect user totals</li>
+                                        <li><strong>help</strong> to see available chat commands</li>
                                     </ul>
-                                    请输入您的需求，或输入"帮助"查看详细命令。
+                                    You can also use the panels on the left for direct CRUD and configuration tasks.
                                 </div>
-                                <div class="message-time">系统初始化</div>
+                                <div class="message-time">Ready</div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="chat-input-container">
                         <div class="chat-input-wrapper">
-                            <textarea 
-                                class="chat-input" 
-                                id="chatInput" 
-                                placeholder="输入消息... (按Enter发送，Shift+Enter换行)"
+                            <textarea
+                                class="chat-input"
+                                id="chatInput"
+                                placeholder="Enter a command... Press Enter to send, Shift+Enter for a new line."
                                 rows="1"
                             ></textarea>
-                            <button class="send-button" id="sendBtn">
+                            <button class="send-button" id="sendBtn" aria-label="Send message">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
                                 </svg>
                             </button>
                         </div>
                         <div class="input-hints">
-                            <span>快捷命令：</span>
-                            <code>创建用户</code>
-                            <code>查询所有用户</code>
-                            <code>统计</code>
-                            <code>帮助</code>
+                            <span>Quick prompts:</span>
+                            <code>help</code>
+                            <code>query all users</code>
+                            <code>stats</code>
+                            <code>create user</code>
                         </div>
                     </div>
                 </div>
             </div>
-            
+
             <div class="content-area hidden" id="usersView">
                 <div class="users-container">
                     <div class="users-toolbar">
                         <div class="search-box">
-                            <input type="text" placeholder="搜索用户..." id="userSearch">
+                            <input type="text" placeholder="Search box reserved for future filtering" id="userSearch">
                         </div>
                         <select id="statusFilter" class="status-filter">
-                            <option value="">全部状态</option>
-                            <option value="active">活跃</option>
-                            <option value="inactive">未活跃</option>
-                            <option value="deleted">已删除</option>
+                            <option value="">All statuses</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="deleted">Deleted</option>
                         </select>
-                        <button class="btn btn-primary" id="addUserBtn">+ 添加用户</button>
+                        <button class="btn btn-primary" id="addUserBtn">Add User</button>
                     </div>
-                    
+
                     <div class="users-table-container">
                         <table class="users-table">
                             <thead>
                                 <tr>
-                                    <th>用户ID</th>
-                                    <th>用户名</th>
-                                    <th>邮箱</th>
-                                    <th>手机</th>
-                                    <th>状态</th>
-                                    <th>创建时间</th>
-                                    <th>操作</th>
+                                    <th>User ID</th>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="usersTableBody">
                                 <tr>
-                                    <td colspan="7" class="loading-text">加载中...</td>
+                                    <td colspan="7" class="loading-text">Loading users...</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <div class="pagination" id="usersPagination">
-                        <button class="page-btn" data-page="prev">上一页</button>
-                        <span class="page-info">第 <span id="currentPage">1</span> 页</span>
-                        <button class="page-btn" data-page="next">下一页</button>
+                        <button class="page-btn" data-page="prev">Previous</button>
+                        <span class="page-info">Page <span id="currentPage">1</span></span>
+                        <button class="page-btn" data-page="next">Next</button>
                     </div>
                 </div>
             </div>
-            
+
             <div class="content-area hidden" id="statsView">
                 <div class="stats-container">
                     <div class="stats-grid">
                         <div class="stat-card">
-                            <div class="stat-icon">👥</div>
+                            <div class="stat-icon">T</div>
                             <div class="stat-content">
                                 <div class="stat-value" id="totalUsers">-</div>
-                                <div class="stat-label">用户总数</div>
+                                <div class="stat-label">Total Users</div>
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon">✅</div>
+                            <div class="stat-icon">A</div>
                             <div class="stat-content">
                                 <div class="stat-value" id="activeUsers">-</div>
-                                <div class="stat-label">活跃用户</div>
+                                <div class="stat-label">Active Users</div>
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon">⏸️</div>
+                            <div class="stat-icon">I</div>
                             <div class="stat-content">
                                 <div class="stat-value" id="inactiveUsers">-</div>
-                                <div class="stat-label">未活跃用户</div>
+                                <div class="stat-label">Inactive Users</div>
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon">🗑️</div>
+                            <div class="stat-icon">D</div>
                             <div class="stat-content">
                                 <div class="stat-value" id="deletedUsers">-</div>
-                                <div class="stat-label">已删除用户</div>
+                                <div class="stat-label">Deleted Users</div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="chart-section">
-                        <h3>状态分布</h3>
+                        <h3>Status Distribution</h3>
                         <div class="status-chart" id="statusChart">
                             <div class="chart-bar" data-status="active">
-                                <div class="bar-label">活跃</div>
+                                <div class="bar-label">Active</div>
                                 <div class="bar-container">
                                     <div class="bar-fill" style="width: 0%"></div>
                                 </div>
                                 <div class="bar-value">0</div>
                             </div>
                             <div class="chart-bar" data-status="inactive">
-                                <div class="bar-label">未活跃</div>
+                                <div class="bar-label">Inactive</div>
                                 <div class="bar-container">
                                     <div class="bar-fill" style="width: 0%"></div>
                                 </div>
                                 <div class="bar-value">0</div>
                             </div>
                             <div class="chart-bar" data-status="deleted">
-                                <div class="bar-label">已删除</div>
+                                <div class="bar-label">Deleted</div>
                                 <div class="bar-container">
                                     <div class="bar-fill" style="width: 0%"></div>
                                 </div>
@@ -229,21 +220,21 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="content-area hidden" id="llmConfigView">
                 <div class="config-container">
                     <div class="config-header">
-                        <h2>大模型配置</h2>
-                        <p class="config-desc">配置智能体使用的大模型API，支持使用默认模型或自定义API</p>
+                        <h2>LLM Configuration</h2>
+                        <p class="config-desc">Configure the optional model provider used by the agent analysis features.</p>
                     </div>
-                    
+
                     <div class="config-card">
                         <div class="config-card-header">
-                            <h3>模型选择</h3>
+                            <h3>Provider</h3>
                         </div>
                         <div class="config-card-body">
                             <div class="form-group">
-                                <label>启用大模型</label>
+                                <label>Enable LLM integration</label>
                                 <div class="toggle-switch">
                                     <input type="checkbox" id="llmEnabled" class="toggle-input">
                                     <label for="llmEnabled" class="toggle-label">
@@ -252,141 +243,229 @@
                                     </label>
                                 </div>
                             </div>
-                            
+
                             <div class="form-group">
-                                <label>模型提供商</label>
+                                <label>Provider</label>
                                 <select id="llmProvider" class="form-select">
-                                    <option value="default">默认模型（推荐）</option>
+                                    <option value="default">Default mock client</option>
                                     <option value="openai">OpenAI</option>
-                                    <option value="pangu">华为云盘古</option>
-                                    <option value="custom">自定义API</option>
+                                    <option value="pangu">Pangu</option>
+                                    <option value="custom">Custom API</option>
                                 </select>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="config-card" id="apiConfigCard">
                         <div class="config-card-header">
-                            <h3>API配置</h3>
-                            <span class="config-badge" id="providerBadge">默认模型</span>
+                            <h3>API Settings</h3>
+                            <span class="config-badge" id="providerBadge">Default</span>
                         </div>
                         <div class="config-card-body">
                             <div class="form-group" id="apiKeyGroup">
-                                <label>API密钥 *</label>
-                                <input type="password" id="llmApiKey" class="form-input" placeholder="请输入API密钥">
-                                <span class="form-hint" id="apiKeyHint">联系管理员获取密钥</span>
+                                <label>API Key *</label>
+                                <input type="password" id="llmApiKey" class="form-input" placeholder="Enter API key">
+                                <span class="form-hint" id="apiKeyHint">Paste your provider key here.</span>
                             </div>
-                            
+
                             <div class="form-group" id="apiEndpointGroup">
-                                <label>API端点</label>
+                                <label>API Endpoint</label>
                                 <input type="text" id="llmApiEndpoint" class="form-input" placeholder="https://api.example.com/v1">
-                                <span class="form-hint">自定义API地址，留空使用默认</span>
+                                <span class="form-hint">Leave blank to use the provider default if supported.</span>
                             </div>
-                            
+
                             <div class="form-group" id="modelGroup">
-                                <label>模型名称</label>
-                                <input type="text" id="llmModel" class="form-input" placeholder="gpt-3.5-turbo">
-                                <span class="form-hint" id="modelHint">默认使用最优模型</span>
+                                <label>Model Name</label>
+                                <input type="text" id="llmModel" class="form-input" placeholder="gpt-4.1-mini">
+                                <span class="form-hint" id="modelHint">Set the model identifier used by your provider.</span>
                             </div>
-                            
+
                             <div class="form-row">
                                 <div class="form-group half">
-                                    <label>超时时间（秒）</label>
+                                    <label>Timeout (seconds)</label>
                                     <input type="number" id="llmTimeout" class="form-input" value="30" min="5" max="120">
                                 </div>
                                 <div class="form-group half">
-                                    <label>最大重试次数</label>
+                                    <label>Max retries</label>
                                     <input type="number" id="llmMaxRetries" class="form-input" value="3" min="0" max="10">
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="config-card" id="defaultModelInfo" style="display: none;">
                         <div class="config-card-header">
-                            <h3>默认模型说明</h3>
+                            <h3>Default Client Notes</h3>
                         </div>
                         <div class="config-card-body">
                             <div class="info-box">
-                                <div class="info-icon">ℹ️</div>
+                                <div class="info-icon">i</div>
                                 <div class="info-content">
-                                    <p><strong>默认模型</strong>是由系统预配置的大模型服务，无需额外配置即可使用。</p>
+                                    <p><strong>The default mock client</strong> is useful for local demos and UI testing.</p>
                                     <ul>
-                                        <li>开箱即用，无需API密钥</li>
-                                        <li>针对用户管理场景优化</li>
-                                        <li>支持中文自然语言理解</li>
+                                        <li>No API key required</li>
+                                        <li>Safe for local experimentation</li>
+                                        <li>Real providers are still optional in this project</li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="config-actions">
                         <button class="btn btn-outline" id="testConnectionBtn">
-                            <span>测试连接</span>
+                            <span>Test Connection</span>
                         </button>
                         <button class="btn btn-primary" id="saveConfigBtn">
-                            <span>保存配置</span>
+                            <span>Save Config</span>
                         </button>
                     </div>
-                    
+
                     <div class="config-status" id="configStatus">
                         <div class="status-item">
-                            <span class="status-label">当前状态：</span>
-                            <span class="status-value" id="currentStatus">未配置</span>
+                            <span class="status-label">Status:</span>
+                            <span class="status-value" id="currentStatus">Disabled</span>
                         </div>
                         <div class="status-item">
-                            <span class="status-label">提供商：</span>
+                            <span class="status-label">Provider:</span>
                             <span class="status-value" id="currentProvider">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-area hidden" id="agentLabView">
+                <div class="config-container">
+                    <div class="config-header">
+                        <h2>Agent Lab</h2>
+                        <p class="config-desc">Day 1 full-stack prototype for the ad analysis agent, workflow review, and prompt engineering.</p>
+                    </div>
+
+                    <div class="config-card">
+                        <div class="config-card-header">
+                            <h3>Run Objective</h3>
+                        </div>
+                        <div class="config-card-body">
+                            <div class="form-group">
+                                <label>Objective</label>
+                                <textarea id="agentObjective" class="form-input agent-textarea" rows="3">Improve campaign efficiency while protecting profitable growth.</textarea>
+                            </div>
+                            <div class="config-actions">
+                                <button class="btn btn-primary" id="runAgentBtn">
+                                    <span>Run Agent</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-card">
+                        <div class="config-card-header">
+                            <h3>Prompt Template</h3>
+                        </div>
+                        <div class="config-card-body">
+                            <div class="form-group">
+                                <label>System Role</label>
+                                <textarea id="promptSystemRole" class="form-input agent-textarea" rows="4"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Task Template</label>
+                                <textarea id="promptTaskTemplate" class="form-input agent-textarea" rows="8"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Output Style</label>
+                                <input type="text" id="promptOutputStyle" class="form-input">
+                            </div>
+                            <div class="config-actions">
+                                <button class="btn btn-outline" id="reloadPromptBtn">
+                                    <span>Reload Template</span>
+                                </button>
+                                <button class="btn btn-primary" id="savePromptBtn">
+                                    <span>Save Template</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-card">
+                        <div class="config-card-header">
+                            <h3>Agent Run Output</h3>
+                        </div>
+                        <div class="config-card-body">
+                            <div class="agent-grid">
+                                <div class="agent-panel">
+                                    <h4>Workflow Steps</h4>
+                                    <div id="agentSteps" class="agent-output">Run the agent to inspect workflow steps.</div>
+                                </div>
+                                <div class="agent-panel">
+                                    <h4>Findings</h4>
+                                    <div id="agentFindings" class="agent-output">No findings yet.</div>
+                                </div>
+                                <div class="agent-panel">
+                                    <h4>Recommendations</h4>
+                                    <div id="agentRecommendations" class="agent-output">No recommendations yet.</div>
+                                </div>
+                                <div class="agent-panel">
+                                    <h4>Prompt Preview</h4>
+                                    <div id="agentPrompt" class="agent-output">No prompt rendered yet.</div>
+                                </div>
+                                <div class="agent-panel">
+                                    <h4>LLM Output</h4>
+                                    <div id="agentLlmOutput" class="agent-output">No model output yet.</div>
+                                </div>
+                                <div class="agent-panel">
+                                    <h4>Next Actions</h4>
+                                    <div id="agentNextActions" class="agent-output">No next actions yet.</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
-    
+
     <div class="modal" id="userModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modalTitle">添加用户</h3>
+                <h3 id="modalTitle">Add User</h3>
                 <button class="modal-close" id="closeModal">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="userForm">
                     <div class="form-group">
-                        <label>用户名 *</label>
-                        <input type="text" name="username" required placeholder="请输入用户名">
+                        <label>Username *</label>
+                        <input type="text" name="username" required placeholder="Enter username">
                     </div>
                     <div class="form-group">
-                        <label>邮箱 *</label>
-                        <input type="email" name="email" required placeholder="请输入邮箱">
+                        <label>Email *</label>
+                        <input type="email" name="email" required placeholder="Enter email">
                     </div>
                     <div class="form-group">
-                        <label>手机号</label>
-                        <input type="tel" name="phone" placeholder="请输入手机号">
+                        <label>Phone</label>
+                        <input type="tel" name="phone" placeholder="Enter phone number">
                     </div>
                     <div class="form-group">
-                        <label>状态</label>
+                        <label>Status</label>
                         <select name="status">
-                            <option value="active">活跃</option>
-                            <option value="inactive">未活跃</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>标签（逗号分隔）</label>
-                        <input type="text" name="tags" placeholder="标签1, 标签2">
+                        <label>Tags (comma separated)</label>
+                        <input type="text" name="tags" placeholder="ops, vip, trial">
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-outline" id="cancelModal">取消</button>
-                <button class="btn btn-primary" id="submitModal">确定</button>
+                <button class="btn btn-outline" id="cancelModal">Cancel</button>
+                <button class="btn btn-primary" id="submitModal">Save</button>
             </div>
         </div>
     </div>
-    
+
     <div class="toast-container" id="toastContainer"></div>
-    
+
     <script src="app.js"></script>
 </body>
 </html>

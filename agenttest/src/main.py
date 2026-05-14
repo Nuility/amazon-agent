@@ -16,11 +16,14 @@ from infrastructure.llm_client import create_llm_client
 from repositories.user_repository import UserRepository
 from repositories.log_repository import LogRepository
 from repositories.config_repository import ConfigRepository
+from repositories.ad_report_repository import AdReportRepository
 from services.rule_engine import RuleEngine
 from services.user_service import UserService
 from services.batch_service import BatchService
 from services.analysis_service import AnalysisService
+from services.ad_agent_service import AdAgentService
 from services.config_service import ConfigService
+from services.prompt_engineering_service import PromptEngineeringService
 from interface.cli import CLI
 
 
@@ -35,9 +38,12 @@ class Application:
         self.user_repo: Optional[UserRepository] = None
         self.log_repo: Optional[LogRepository] = None
         self.config_repo: Optional[ConfigRepository] = None
+        self.ad_report_repo: Optional[AdReportRepository] = None
         self.user_service: Optional[UserService] = None
         self.batch_service: Optional[BatchService] = None
         self.analysis_service: Optional[AnalysisService] = None
+        self.ad_agent_service: Optional[AdAgentService] = None
+        self.prompt_engineering_service: Optional[PromptEngineeringService] = None
         self.config_service: Optional[ConfigService] = None
         self.cli: Optional[CLI] = None
     
@@ -86,6 +92,7 @@ class Application:
             self.user_repo = UserRepository(self.storage)
             self.log_repo = LogRepository(self.storage)
             self.config_repo = config_repo
+            self.ad_report_repo = AdReportRepository(self.storage)
             
             llm_client = create_llm_client(config.llm_api_config)
             
@@ -100,6 +107,11 @@ class Application:
             self.config_service._config = config
             self.config_service._config_path = actual_config_path
             
+            self.prompt_engineering_service = PromptEngineeringService(
+                config_dir=os.path.join(os.path.dirname(os.path.dirname(__file__)), "config"),
+                logger=self.logger
+            )
+
             self.user_service = UserService(
                 user_repository=self.user_repo,
                 log_repository=self.log_repo,
@@ -121,6 +133,13 @@ class Application:
                 user_repository=self.user_repo,
                 llm_client=llm_client,
                 config_service=self.config_service,
+                logger=self.logger
+            )
+
+            self.ad_agent_service = AdAgentService(
+                ad_report_repository=self.ad_report_repo,
+                prompt_engineering_service=self.prompt_engineering_service,
+                llm_client=llm_client,
                 logger=self.logger
             )
             
