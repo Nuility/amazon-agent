@@ -1,27 +1,33 @@
-"""FastAPI服务端 - Agent UI后端API"""
+"""FastAPI backend for the Agent UI."""
 import os
 import sys
-import json
-import asyncio
-from datetime import datetime
-from typing import Dict, List, Optional, Any
 from contextlib import asynccontextmanager
+from datetime import datetime
+from typing import Any, Dict, Optional
+
+from fastapi import Body, FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 
 api_dir = os.path.dirname(os.path.abspath(__file__))
 src_dir = os.path.dirname(api_dir)
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
-from fastapi import FastAPI, HTTPException, Query, Body
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, StreamingResponse
-from pydantic import BaseModel
-
 from main import Application
 
 
 app_instance: Optional[Application] = None
+
+CREATE_KEYWORDS = ("create", "add", "new")
+QUERY_KEYWORDS = ("query", "search", "find", "get")
+LIST_KEYWORDS = ("all", "list", "users")
+DELETE_KEYWORDS = ("delete", "remove")
+STATS_KEYWORDS = ("stats", "statistics", "analyze", "analysis")
+HELP_KEYWORDS = ("help", "commands")
+AD_KEYWORDS = ("ad", "ads", "campaign", "campaigns", "acos", "roas")
+AGENT_KEYWORDS = ("agent", "workflow", "optimize ads", "run analysis")
 
 
 class ChatMessage(BaseModel):
@@ -44,30 +50,107 @@ class LLMConfigRequest(BaseModel):
     max_retries: int = 3
 
 
+class AgentRunRequest(BaseModel):
+    objective: str = "Improve campaign efficiency while protecting profitable growth."
+    filters: Optional[Dict[str, Any]] = None
+
+
+class PromptTemplateRequest(BaseModel):
+    system_role: str
+    task_template: str
+    output_style: str
+
+
+def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
+    return any(keyword in text for keyword in keywords)
+
+
+def _require_app() -> Application:
+    if not app_instance:
+        raise HTTPException(status_code=503, detail="Service is not initialized")
+    return app_instance
+
+
+def _build_statistics_payload(filters: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    app = _require_app()
+    result = app.analysis_service.get_statistics(filters)
+
+    if not result.success or not result.data:
+        raise HTTPException(
+            status_code=500,
+            detail=result.error_message or "Failed to load statistics",
+        )
+
+    stats = result.data
+    return {
+        "total_users": stats.total_users,
+        "status_distribution": stats.status_distribution,
+        "tag_distribution": stats.tag_distribution,
+        "attributes_distribution": stats.attributes_distribution,
+    }
+
+
+def _build_ad_summary_payload(filters: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    app = _require_app()
+    result = app.ad_agent_service.get_summary(filters)
+
+    if not result.success or not result.data:
+        raise HTTPException(
+            status_code=500,
+            detail=result.error_message or "Failed to load ad summary",
+        )
+
+    return result.data.to_dict()
+
+
+def _run_analysis(analysis_type: str, params: Optional[Dict[str, Any]] = None):
+    app = _require_app()
+    normalized = (analysis_type or "basic").lower()
+    params = params or {}
+
+    if normalized == "basic":
+        return app.analysis_service.get_statistics(params.get("filters"))
+    if normalized == "anomalies":
+        return app.analysis_service.detect_anomalies()
+    if normalized == "suggestions":
+        return app.analysis_service.get_operation_suggestions(params)
+    if normalized == "classification":
+        return app.analysis_service.get_classification_suggestions(
+            params.get("criteria", "group users by status"),
+            params.get("filters"),
+        )
+    if normalized == "ads":
+        return app.ad_agent_service.get_summary(params.get("filters"))
+    if normalized == "ad_recommendations":
+        return app.ad_agent_service.get_recommendations(params.get("filters"))
+
+    raise HTTPException(status_code=400, detail=f"Unknown analysis type: {analysis_type}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global app_instance
     app_instance = Application()
-    
+
     config_path = os.path.join(
         os.path.dirname(os.path.dirname(__file__)),
         "config",
-        "config.yaml"
+        "config.yaml",
     )
-    
+
     if not app_instance.initialize(config_path):
-        raise RuntimeError("应用初始化失败")
-    
+        raise RuntimeError("Application initialization failed")
+
     yield
-    
+
     app_instance.shutdown()
 
 
 app = FastAPI(
-    title="用户管理智能体 API",
-    description="Agent UI 后端API服务",
+    title="User Management Agent API",
+    description="Agent UI backend API service",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -81,386 +164,429 @@ app.add_middleware(
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    """返回Agent UI页面"""
+    """Return the bundled Agent UI page."""
     ui_path = os.path.join(os.path.dirname(__file__), "ui", "index.html")
     if os.path.exists(ui_path):
         with open(ui_path, "r", encoding="utf-8") as f:
             return f.read()
-    return HTMLResponse(content="<h1>Agent UI</h1><p>请创建 ui/index.html 文件</p>")
+    return HTMLResponse(content="<h1>Agent UI</h1><p>Please create ui/index.html first.</p>")
 
 
 @app.get("/api/health")
 async def health_check():
-    """健康检查"""
+    """Service health check."""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
 @app.post("/api/chat")
 async def chat(message: ChatMessage):
-    """聊天式交互接口"""
-    if not app_instance:
-        raise HTTPException(status_code=503, detail="服务未初始化")
-    
+    """Simple chat-style interface for common user-management actions."""
+    app = _require_app()
+
     try:
         msg = message.message.lower().strip()
         response_text = ""
         data = None
-        
-        if "创建" in msg or "添加" in msg or "新增" in msg:
-            response_text = "请提供用户信息，格式：创建用户 用户名 邮箱 [手机号]"
+
+        if _contains_any(msg, CREATE_KEYWORDS):
+            response_text = "Provide user data in the form: create username email [phone]"
             data = {"action": "create", "hint": "username email [phone]"}
-            
-        elif "查询" in msg or "查找" in msg or "搜索" in msg:
-            if "所有" in msg or "列表" in msg:
-                result = app_instance.user_service.list_users()
+        elif _contains_any(msg, QUERY_KEYWORDS):
+            if _contains_any(msg, LIST_KEYWORDS):
+                result = app.user_service.list_users()
                 if result.success:
                     users = result.data.get("users", [])
-                    response_text = f"共找到 {len(users)} 个用户"
+                    response_text = f"Found {len(users)} users"
                     data = {"users": users}
                 else:
-                    response_text = f"查询失败: {result.error_message}"
+                    response_text = f"Query failed: {result.error_message}"
             else:
-                response_text = "请提供用户ID进行查询"
+                response_text = "Please provide a user ID to query."
                 data = {"action": "query", "hint": "user_id"}
-                
-        elif "删除" in msg:
-            response_text = "请提供要删除的用户ID"
+        elif _contains_any(msg, DELETE_KEYWORDS):
+            response_text = "Please provide the user ID to delete."
             data = {"action": "delete", "hint": "user_id"}
-            
-        elif "统计" in msg or "分析" in msg:
-            result = app_instance.user_service.list_users()
-            if result.success:
-                users = result.data.get("users", [])
-                total = result.data.get("total", 0)
-                response_text = f"用户总数: {total}\n活跃用户: {len([u for u in users if u.get('status') == 'active'])}"
-                data = {"statistics": {"total": total, "users": users}}
+        elif _contains_any(msg, AD_KEYWORDS):
+            ad_summary = _build_ad_summary_payload()
+            response_text = (
+                f"Ad campaigns: {ad_summary['total_campaigns']}\n"
+                f"Spend: {ad_summary['total_cost']}\n"
+                f"Sales: {ad_summary['total_sales']}\n"
+                f"ROAS: {ad_summary['average_roas']}"
+            )
+            data = {"ad_summary": ad_summary}
+        elif _contains_any(msg, AGENT_KEYWORDS):
+            result = app.ad_agent_service.run_agent_workflow()
+            if result.success and result.data:
+                agent_run = result.data.to_dict()
+                response_text = (
+                    f"Agent workflow completed.\n"
+                    f"Objective: {agent_run['objective']}\n"
+                    f"Top next action: {agent_run['next_actions'][0]}"
+                )
+                data = {"agent_run": agent_run}
             else:
-                response_text = f"统计失败: {result.error_message}"
-                
-        elif "帮助" in msg or "help" in msg:
-            response_text = """可用命令：
-1. 创建用户 - 创建新用户
-2. 查询所有用户 - 查看用户列表
-3. 查询用户 - 按ID查询用户
-4. 删除用户 - 删除指定用户
-5. 统计 - 查看用户统计信息
-6. 帮助 - 显示此帮助信息"""
-            
+                response_text = f"Agent workflow failed: {result.error_message}"
+        elif _contains_any(msg, STATS_KEYWORDS):
+            statistics = _build_statistics_payload()
+            active_users = statistics["status_distribution"].get("active", 0)
+            response_text = f"Total users: {statistics['total_users']}\nActive users: {active_users}"
+            data = {"statistics": statistics}
+        elif _contains_any(msg, HELP_KEYWORDS):
+            response_text = (
+                "Available commands:\n"
+                "1. create user\n"
+                "2. query all users\n"
+                "3. query user by id\n"
+                "4. delete user\n"
+                "5. stats\n"
+                "6. help"
+            )
         else:
-            response_text = "未识别的命令。输入'帮助'查看可用命令。"
-        
+            response_text = "Unknown command. Enter help to view available commands."
+
         return {
             "success": True,
             "message": response_text,
             "data": data,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
-        
-    except Exception as e:
-        return {
-            "success": False,
-            "message": f"处理失败: {str(e)}",
-            "timestamp": datetime.now().isoformat()
-        }
-
-
-@app.post("/api/execute")
-async def execute_command(request: CommandRequest):
-    """执行具体命令"""
-    if not app_instance:
-        raise HTTPException(status_code=503, detail="服务未初始化")
-    
-    try:
-        command = request.command
-        params = request.params or {}
-        result = None
-        
-        if command == "create_user":
-            result = app_instance.user_service.create_user(
-                params,
-                operator=params.get("operator", "ui_user")
-            )
-            
-        elif command == "get_user":
-            result = app_instance.user_service.get_user(params.get("user_id"))
-            
-        elif command == "update_user":
-            result = app_instance.user_service.update_user(
-                params.get("user_id"),
-                params.get("update_data", {}),
-                operator=params.get("operator", "ui_user")
-            )
-            
-        elif command == "delete_user":
-            result = app_instance.user_service.delete_user(
-                params.get("user_id"),
-                logical=params.get("logical", True),
-                operator=params.get("operator", "ui_user")
-            )
-            
-        elif command == "list_users":
-            result = app_instance.user_service.list_users(
-                filters=params.get("filters"),
-                page=params.get("page", 1),
-                page_size=params.get("page_size", 20)
-            )
-            
-        elif command == "analyze":
-            result = app_instance.analysis_service.analyze_users(
-                analysis_type=params.get("analysis_type", "basic"),
-                params=params.get("params")
-            )
-            
-        else:
-            raise HTTPException(status_code=400, detail=f"未知命令: {command}")
-        
-        if result and result.success:
-            response_data = result.data
-            if hasattr(response_data, 'to_dict'):
-                response_data = response_data.to_dict()
-            return {
-                "success": True,
-                "data": response_data,
-                "message": "执行成功"
-            }
-        else:
-            return {
-                "success": False,
-                "error": result.error_message if result else "执行失败",
-                "error_code": result.error_code if result else -1
-            }
-            
     except HTTPException:
         raise
     except Exception as e:
         return {
             "success": False,
-            "error": str(e)
+            "message": f"Processing failed: {str(e)}",
+            "timestamp": datetime.now().isoformat(),
         }
+
+
+@app.post("/api/execute")
+async def execute_command(request: CommandRequest):
+    """Execute a structured command from the UI."""
+    app = _require_app()
+
+    try:
+        command = request.command
+        params = request.params or {}
+        result = None
+
+        if command == "create_user":
+            result = app.user_service.create_user(
+                params,
+                operator=params.get("operator", "ui_user"),
+            )
+        elif command == "get_user":
+            result = app.user_service.get_user(params.get("user_id"))
+        elif command == "update_user":
+            result = app.user_service.update_user(
+                params.get("user_id"),
+                params.get("update_data", {}),
+                operator=params.get("operator", "ui_user"),
+            )
+        elif command == "delete_user":
+            result = app.user_service.delete_user(
+                params.get("user_id"),
+                logical=params.get("logical", True),
+                operator=params.get("operator", "ui_user"),
+            )
+        elif command == "list_users":
+            result = app.user_service.list_users(
+                filters=params.get("filters"),
+                page=params.get("page", 1),
+                page_size=params.get("page_size", 20),
+            )
+        elif command == "analyze":
+            result = _run_analysis(
+                params.get("analysis_type", "basic"),
+                params.get("params"),
+            )
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown command: {command}")
+
+        if result and result.success:
+            response_data = result.data
+            if hasattr(response_data, "to_dict"):
+                response_data = response_data.to_dict()
+            return {
+                "success": True,
+                "data": response_data,
+                "message": "Execution succeeded",
+            }
+
+        return {
+            "success": False,
+            "error": result.error_message if result else "Execution failed",
+            "error_code": result.error_code if result else -1,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @app.get("/api/users")
 async def get_users(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status: Optional[str] = None
+    status: Optional[str] = None,
 ):
-    """获取用户列表"""
-    if not app_instance:
-        raise HTTPException(status_code=503, detail="服务未初始化")
-    
+    """Fetch a page of users."""
+    app = _require_app()
+
     filters = {}
     if status:
         filters["status"] = status
-    
-    result = app_instance.user_service.list_users(filters, page, page_size)
-    
+
+    result = app.user_service.list_users(filters, page, page_size)
     if result.success:
         return result.data
+
     raise HTTPException(status_code=500, detail=result.error_message)
 
 
 @app.get("/api/users/{user_id}")
 async def get_user(user_id: str):
-    """获取用户详情"""
-    if not app_instance:
-        raise HTTPException(status_code=503, detail="服务未初始化")
-    
-    result = app_instance.user_service.get_user(user_id)
-    
+    """Fetch one user by id."""
+    app = _require_app()
+
+    result = app.user_service.get_user(user_id)
     if result.success:
         return result.data.to_dict()
+
     raise HTTPException(status_code=404, detail=result.error_message)
 
 
 @app.post("/api/users")
 async def create_user(user_data: Dict[str, Any] = Body(...)):
-    """创建用户"""
-    if not app_instance:
-        raise HTTPException(status_code=503, detail="服务未初始化")
-    
-    result = app_instance.user_service.create_user(
+    """Create a user."""
+    app = _require_app()
+
+    result = app.user_service.create_user(
         user_data,
-        operator=user_data.get("operator", "ui_user")
+        operator=user_data.get("operator", "ui_user"),
     )
-    
     if result.success:
         return {"success": True, "user": result.data.to_dict()}
+
     return {"success": False, "error": result.error_message}
 
 
 @app.put("/api/users/{user_id}")
 async def update_user(user_id: str, update_data: Dict[str, Any] = Body(...)):
-    """更新用户"""
-    if not app_instance:
-        raise HTTPException(status_code=503, detail="服务未初始化")
-    
-    result = app_instance.user_service.update_user(
+    """Update a user."""
+    app = _require_app()
+
+    result = app.user_service.update_user(
         user_id,
         update_data,
-        operator=update_data.get("operator", "ui_user")
+        operator=update_data.get("operator", "ui_user"),
     )
-    
     if result.success:
         return {"success": True, "user": result.data.to_dict()}
+
     return {"success": False, "error": result.error_message}
 
 
 @app.delete("/api/users/{user_id}")
 async def delete_user(user_id: str, logical: bool = True):
-    """删除用户"""
-    if not app_instance:
-        raise HTTPException(status_code=503, detail="服务未初始化")
-    
-    result = app_instance.user_service.delete_user(
+    """Delete a user."""
+    app = _require_app()
+
+    result = app.user_service.delete_user(
         user_id,
         logical=logical,
-        operator="ui_user"
+        operator="ui_user",
     )
-    
     if result.success:
         return {"success": True}
+
     return {"success": False, "error": result.error_message}
 
 
 @app.get("/api/statistics")
 async def get_statistics():
-    """获取统计数据"""
-    if not app_instance:
-        raise HTTPException(status_code=503, detail="服务未初始化")
-    
-    result = app_instance.analysis_service.analyze_users("basic")
-    
+    """Return aggregate user statistics."""
+    return _build_statistics_payload()
+
+
+@app.get("/api/ad-insights/summary")
+async def get_ad_summary():
+    """Return aggregate ad performance metrics."""
+    return _build_ad_summary_payload()
+
+
+@app.get("/api/ad-insights/campaigns")
+async def get_ad_campaigns(status: Optional[str] = None):
+    """Return seeded ad campaign performance rows."""
+    app = _require_app()
+    filters = {"status": status} if status else None
+    result = app.ad_agent_service.list_campaigns(filters)
     if result.success:
-        return result.data if isinstance(result.data, dict) else {"data": result.data}
+        return {"campaigns": result.data}
+
     raise HTTPException(status_code=500, detail=result.error_message)
+
+
+@app.get("/api/ad-insights/recommendations")
+async def get_ad_recommendations(status: Optional[str] = None):
+    """Return starter optimization recommendations for ad campaigns."""
+    app = _require_app()
+    filters = {"status": status} if status else None
+    result = app.ad_agent_service.get_recommendations(filters)
+    if result.success:
+        return {"recommendations": result.data}
+
+    raise HTTPException(status_code=500, detail=result.error_message)
+
+
+@app.post("/api/ad-agent/run")
+async def run_ad_agent(request: AgentRunRequest):
+    """Run the starter ad agent workflow."""
+    app = _require_app()
+    result = app.ad_agent_service.run_agent_workflow(
+        objective=request.objective,
+        filters=request.filters,
+    )
+    if result.success and result.data:
+        return {"success": True, "run": result.data.to_dict()}
+
+    return {"success": False, "error": result.error_message}
+
+
+@app.get("/api/ad-agent/prompt-template")
+async def get_ad_agent_prompt_template():
+    """Return the current ad agent prompt template."""
+    app = _require_app()
+    result = app.prompt_engineering_service.get_template()
+    if result.success:
+        return {"success": True, "template": result.data}
+
+    return {"success": False, "error": result.error_message}
+
+
+@app.post("/api/ad-agent/prompt-template")
+async def update_ad_agent_prompt_template(request: PromptTemplateRequest):
+    """Update the current ad agent prompt template."""
+    app = _require_app()
+    result = app.prompt_engineering_service.update_template(request.model_dump())
+    if result.success:
+        return {"success": True, "template": result.data}
+
+    return {"success": False, "error": result.error_message}
 
 
 @app.get("/api/config")
 async def get_config():
-    """获取配置信息"""
-    if not app_instance:
-        raise HTTPException(status_code=503, detail="服务未初始化")
-    
-    return app_instance.config.to_dict()
+    """Return the current application config."""
+    app = _require_app()
+    return app.config.to_dict()
 
 
 @app.get("/api/config/llm")
 async def get_llm_config():
-    """获取大模型配置"""
-    if not app_instance:
-        raise HTTPException(status_code=503, detail="服务未初始化")
-    
-    config = app_instance.config
+    """Return LLM integration settings."""
+    app = _require_app()
     return {
-        "enabled": config.enable_llm_integration,
-        "config": config.llm_api_config
+        "enabled": app.config.enable_llm_integration,
+        "config": app.config.llm_api_config,
     }
 
 
 @app.post("/api/config/llm")
 async def update_llm_config(config: LLMConfigRequest):
-    """更新大模型配置"""
-    if not app_instance:
-        raise HTTPException(status_code=503, detail="服务未初始化")
-    
+    """Update LLM integration settings."""
+    app = _require_app()
+
     try:
         import yaml
-        
+
         config_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
             "config",
-            "config.yaml"
+            "config.yaml",
         )
-        
-        with open(config_path, 'r', encoding='utf-8') as f:
+
+        with open(config_path, "r", encoding="utf-8") as f:
             current_config = yaml.safe_load(f) or {}
-        
-        current_config['enable_llm_integration'] = config.enabled
-        current_config['llm_api_config'] = {
-            'provider': config.provider,
-            'api_key': config.api_key,
-            'api_endpoint': config.api_endpoint,
-            'model': config.model,
-            'timeout': config.timeout,
-            'max_retries': config.max_retries
+
+        current_config["enable_llm_integration"] = config.enabled
+        current_config["llm_api_config"] = {
+            "provider": config.provider,
+            "api_key": config.api_key,
+            "api_endpoint": config.api_endpoint,
+            "model": config.model,
+            "timeout": config.timeout,
+            "max_retries": config.max_retries,
         }
-        
-        with open(config_path, 'w', encoding='utf-8') as f:
+
+        with open(config_path, "w", encoding="utf-8") as f:
             yaml.dump(current_config, f, allow_unicode=True, default_flow_style=False)
-        
-        app_instance.config.enable_llm_integration = config.enabled
-        app_instance.config.llm_api_config = current_config['llm_api_config']
-        
+
+        app.config.enable_llm_integration = config.enabled
+        app.config.llm_api_config = current_config["llm_api_config"]
+
         from infrastructure.llm_client import create_llm_client
-        app_instance.analysis_service.llm_client = create_llm_client(
-            current_config['llm_api_config']
-        )
-        
+
+        app.analysis_service.llm_client = create_llm_client(current_config["llm_api_config"])
+
         return {
             "success": True,
-            "message": "配置已更新",
-            "config": current_config['llm_api_config']
+            "message": "Config updated",
+            "config": current_config["llm_api_config"],
         }
-        
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return {"success": False, "error": str(e)}
 
 
 @app.post("/api/config/llm/test")
 async def test_llm_connection(config: LLMConfigRequest):
-    """测试大模型连接"""
+    """Test the configured LLM connection."""
     try:
         from infrastructure.llm_client import create_llm_client
-        
+
         llm_config = {
-            'provider': config.provider,
-            'api_key': config.api_key,
-            'api_endpoint': config.api_endpoint,
-            'model': config.model,
-            'timeout': config.timeout,
-            'max_retries': config.max_retries
+            "provider": config.provider,
+            "api_key": config.api_key,
+            "api_endpoint": config.api_endpoint,
+            "model": config.model,
+            "timeout": config.timeout,
+            "max_retries": config.max_retries,
         }
-        
+
         llm_client = create_llm_client(llm_config)
-        
+
         if config.provider == "mock":
             return {
                 "success": True,
-                "message": "模拟客户端无需测试，始终可用"
+                "message": "Mock client is always available.",
             }
-        
+
         try:
-            result = llm_client.call("测试连接")
+            result = llm_client.call("test connection")
             return {
                 "success": True,
-                "message": "连接成功",
-                "response": result[:100] if result else ""
+                "message": "Connection succeeded",
+                "response": result[:100] if result else "",
             }
         except NotImplementedError:
             return {
                 "success": False,
-                "error": "该大模型客户端尚未完整实现，请等待后续更新"
+                "error": "The configured LLM client is still a placeholder implementation.",
             }
         except Exception as e:
             return {
                 "success": False,
-                "error": f"连接失败: {str(e)}"
+                "error": f"Connection failed: {str(e)}",
             }
-            
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return {"success": False, "error": str(e)}
 
 
 def run_server(host: str = "0.0.0.0", port: int = 8000):
-    """启动服务器"""
+    """Run the FastAPI service."""
     import uvicorn
+
     uvicorn.run(app, host=host, port=port)
 
 

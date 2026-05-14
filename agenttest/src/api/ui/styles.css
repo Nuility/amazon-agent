@@ -899,6 +899,12 @@ body {
     border-color: var(--primary-color);
 }
 
+.agent-textarea {
+    min-height: 96px;
+    resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 .form-hint {
     display: block;
     margin-top: 6px;
@@ -945,4 +951,30 @@ body {
 
 .info-content li {
     margin: 4px 0;
+}
+
+.agent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.agent-panel {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    padding: 16px;
+}
+
+.agent-panel h4 {
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.agent-output {
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-primary);
 }
