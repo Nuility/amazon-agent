@@ -72,6 +72,21 @@ class AgentUI {
                 }
             });
         });
+        
+        const llmProvider = document.getElementById('llmProvider');
+        if (llmProvider) {
+            llmProvider.addEventListener('change', () => this.updateProviderUI());
+        }
+        
+        const saveConfigBtn = document.getElementById('saveConfigBtn');
+        if (saveConfigBtn) {
+            saveConfigBtn.addEventListener('click', () => this.saveLLMConfig());
+        }
+        
+        const testConnectionBtn = document.getElementById('testConnectionBtn');
+        if (testConnectionBtn) {
+            testConnectionBtn.addEventListener('click', () => this.testLLMConnection());
+        }
     }
     
     async checkHealth() {
@@ -92,12 +107,13 @@ class AgentUI {
         document.querySelector(`.nav-item[data-view="${view}"]`).classList.add('active');
         
         document.querySelectorAll('.content-area').forEach(area => area.classList.add('hidden'));
-        document.getElementById(`${view}View`).classList.remove('hidden');
+        document.getElementById(`${this.getViewId(view)}View`).classList.remove('hidden');
         
         const titles = {
             chat: '对话交互',
             users: '用户管理',
-            stats: '数据统计'
+            stats: '数据统计',
+            'llm-config': '大模型配置'
         };
         document.querySelector('.page-title').textContent = titles[view] || view;
         
@@ -105,7 +121,19 @@ class AgentUI {
             this.loadUsers();
         } else if (view === 'stats') {
             this.loadStatistics();
+        } else if (view === 'llm-config') {
+            this.loadLLMConfig();
         }
+    }
+    
+    getViewId(view) {
+        const viewMap = {
+            'llm-config': 'llmConfig',
+            'chat': 'chat',
+            'users': 'users',
+            'stats': 'stats'
+        };
+        return viewMap[view] || view;
     }
     
     async sendMessage() {
@@ -389,6 +417,181 @@ class AgentUI {
             clearTimeout(timeout);
             timeout = setTimeout(() => func.apply(this, args), wait);
         };
+    }
+    
+    async loadLLMConfig() {
+        try {
+            const response = await fetch(`${this.apiBase}/config/llm`);
+            const data = await response.json();
+            
+            const config = data.config || {};
+            
+            document.getElementById('llmEnabled').checked = data.enabled || false;
+            
+            const provider = config.provider || 'mock';
+            const providerSelect = document.getElementById('llmProvider');
+            if (provider === 'mock') {
+                providerSelect.value = 'default';
+            } else {
+                providerSelect.value = provider;
+            }
+            
+            document.getElementById('llmApiKey').value = config.api_key || '';
+            document.getElementById('llmApiEndpoint').value = config.api_endpoint || '';
+            document.getElementById('llmModel').value = config.model || '';
+            document.getElementById('llmTimeout').value = config.timeout || 30;
+            document.getElementById('llmMaxRetries').value = config.max_retries || 3;
+            
+            this.updateProviderUI();
+            this.updateStatusDisplay(data.enabled, provider);
+            
+        } catch (error) {
+            this.showToast('加载配置失败', 'error');
+        }
+    }
+    
+    updateProviderUI() {
+        const provider = document.getElementById('llmProvider').value;
+        const apiConfigCard = document.getElementById('apiConfigCard');
+        const defaultModelInfo = document.getElementById('defaultModelInfo');
+        const providerBadge = document.getElementById('providerBadge');
+        const apiKeyGroup = document.getElementById('apiKeyGroup');
+        
+        const providerNames = {
+            'default': '默认模型',
+            'openai': 'OpenAI',
+            'pangu': '华为云盘古',
+            'custom': '自定义API'
+        };
+        
+        providerBadge.textContent = providerNames[provider] || provider;
+        
+        if (provider === 'default') {
+            defaultModelInfo.style.display = 'block';
+            apiConfigCard.style.display = 'none';
+        } else {
+            defaultModelInfo.style.display = 'none';
+            apiConfigCard.style.display = 'block';
+            
+            const hints = {
+                'openai': {
+                    endpoint: 'https://api.openai.com/v1',
+                    model: 'gpt-3.5-turbo 或 gpt-4',
+                    hint: '从 OpenAI 官网获取 API Key'
+                },
+                'pangu': {
+                    endpoint: '华为云盘古API端点',
+                    model: '盘古模型名称',
+                    hint: '从华为云控制台获取'
+                },
+                'custom': {
+                    endpoint: '自定义API地址',
+                    model: '模型标识',
+                    hint: '输入您的API密钥'
+                }
+            };
+            
+            const hint = hints[provider];
+            if (hint) {
+                document.getElementById('llmApiEndpoint').placeholder = hint.endpoint;
+                document.getElementById('llmModel').placeholder = hint.model;
+                document.getElementById('apiKeyHint').textContent = hint.hint;
+            }
+        }
+    }
+    
+    updateStatusDisplay(enabled, provider) {
+        const statusEl = document.getElementById('currentStatus');
+        const providerEl = document.getElementById('currentProvider');
+        
+        statusEl.textContent = enabled ? '已启用' : '未启用';
+        statusEl.style.color = enabled ? '#10b981' : '#ef4444';
+        
+        const providerNames = {
+            'mock': '默认模型',
+            'openai': 'OpenAI',
+            'pangu': '华为云盘古',
+            'custom': '自定义API'
+        };
+        providerEl.textContent = providerNames[provider] || provider;
+    }
+    
+    async saveLLMConfig() {
+        const provider = document.getElementById('llmProvider').value;
+        const actualProvider = provider === 'default' ? 'mock' : provider;
+        
+        const config = {
+            enabled: document.getElementById('llmEnabled').checked,
+            provider: actualProvider,
+            api_key: document.getElementById('llmApiKey').value,
+            api_endpoint: document.getElementById('llmApiEndpoint').value,
+            model: document.getElementById('llmModel').value,
+            timeout: parseInt(document.getElementById('llmTimeout').value) || 30,
+            max_retries: parseInt(document.getElementById('llmMaxRetries').value) || 3
+        };
+        
+        if (config.enabled && provider !== 'default') {
+            if (!config.api_key) {
+                this.showToast('请输入API密钥', 'error');
+                return;
+            }
+        }
+        
+        try {
+            const response = await fetch(`${this.apiBase}/config/llm`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.showToast('配置保存成功', 'success');
+                this.updateStatusDisplay(config.enabled, actualProvider);
+            } else {
+                this.showToast(data.error || '保存失败', 'error');
+            }
+            
+        } catch (error) {
+            this.showToast('保存失败', 'error');
+        }
+    }
+    
+    async testLLMConnection() {
+        const provider = document.getElementById('llmProvider').value;
+        const actualProvider = provider === 'default' ? 'mock' : provider;
+        
+        const config = {
+            enabled: true,
+            provider: actualProvider,
+            api_key: document.getElementById('llmApiKey').value,
+            api_endpoint: document.getElementById('llmApiEndpoint').value,
+            model: document.getElementById('llmModel').value,
+            timeout: parseInt(document.getElementById('llmTimeout').value) || 30,
+            max_retries: parseInt(document.getElementById('llmMaxRetries').value) || 3
+        };
+        
+        try {
+            this.showToast('正在测试连接...', 'info');
+            
+            const response = await fetch(`${this.apiBase}/config/llm/test`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.showToast(data.message || '连接成功', 'success');
+            } else {
+                this.showToast(data.error || '连接失败', 'error');
+            }
+            
+        } catch (error) {
+            this.showToast('测试失败', 'error');
+        }
     }
 }
 

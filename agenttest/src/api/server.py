@@ -34,6 +34,16 @@ class CommandRequest(BaseModel):
     params: Optional[Dict[str, Any]] = None
 
 
+class LLMConfigRequest(BaseModel):
+    enabled: bool
+    provider: str
+    api_key: str
+    api_endpoint: str
+    model: str
+    timeout: int = 30
+    max_retries: int = 3
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global app_instance
@@ -333,6 +343,119 @@ async def get_config():
         raise HTTPException(status_code=503, detail="服务未初始化")
     
     return app_instance.config.to_dict()
+
+
+@app.get("/api/config/llm")
+async def get_llm_config():
+    """获取大模型配置"""
+    if not app_instance:
+        raise HTTPException(status_code=503, detail="服务未初始化")
+    
+    config = app_instance.config
+    return {
+        "enabled": config.enable_llm_integration,
+        "config": config.llm_api_config
+    }
+
+
+@app.post("/api/config/llm")
+async def update_llm_config(config: LLMConfigRequest):
+    """更新大模型配置"""
+    if not app_instance:
+        raise HTTPException(status_code=503, detail="服务未初始化")
+    
+    try:
+        import yaml
+        
+        config_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "config",
+            "config.yaml"
+        )
+        
+        with open(config_path, 'r', encoding='utf-8') as f:
+            current_config = yaml.safe_load(f) or {}
+        
+        current_config['enable_llm_integration'] = config.enabled
+        current_config['llm_api_config'] = {
+            'provider': config.provider,
+            'api_key': config.api_key,
+            'api_endpoint': config.api_endpoint,
+            'model': config.model,
+            'timeout': config.timeout,
+            'max_retries': config.max_retries
+        }
+        
+        with open(config_path, 'w', encoding='utf-8') as f:
+            yaml.dump(current_config, f, allow_unicode=True, default_flow_style=False)
+        
+        app_instance.config.enable_llm_integration = config.enabled
+        app_instance.config.llm_api_config = current_config['llm_api_config']
+        
+        from infrastructure.llm_client import create_llm_client
+        app_instance.analysis_service.llm_client = create_llm_client(
+            current_config['llm_api_config']
+        )
+        
+        return {
+            "success": True,
+            "message": "配置已更新",
+            "config": current_config['llm_api_config']
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+@app.post("/api/config/llm/test")
+async def test_llm_connection(config: LLMConfigRequest):
+    """测试大模型连接"""
+    try:
+        from infrastructure.llm_client import create_llm_client
+        
+        llm_config = {
+            'provider': config.provider,
+            'api_key': config.api_key,
+            'api_endpoint': config.api_endpoint,
+            'model': config.model,
+            'timeout': config.timeout,
+            'max_retries': config.max_retries
+        }
+        
+        llm_client = create_llm_client(llm_config)
+        
+        if config.provider == "mock":
+            return {
+                "success": True,
+                "message": "模拟客户端无需测试，始终可用"
+            }
+        
+        try:
+            result = llm_client.call("测试连接")
+            return {
+                "success": True,
+                "message": "连接成功",
+                "response": result[:100] if result else ""
+            }
+        except NotImplementedError:
+            return {
+                "success": False,
+                "error": "该大模型客户端尚未完整实现，请等待后续更新"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"连接失败: {str(e)}"
+            }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 
 def run_server(host: str = "0.0.0.0", port: int = 8000):

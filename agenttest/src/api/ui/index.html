@@ -34,6 +34,14 @@
                 </div>
                 
                 <div class="nav-section">
+                    <div class="nav-title">系统设置</div>
+                    <a href="#" class="nav-item" data-view="llm-config">
+                        <span class="nav-icon">🧠</span>
+                        <span>大模型配置</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section">
                     <div class="nav-title">快捷操作</div>
                     <a href="#" class="nav-item" data-action="quick-create">
                         <span class="nav-icon">➕</span>
@@ -217,6 +225,119 @@
                                 </div>
                                 <div class="bar-value">0</div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="content-area hidden" id="llmConfigView">
+                <div class="config-container">
+                    <div class="config-header">
+                        <h2>大模型配置</h2>
+                        <p class="config-desc">配置智能体使用的大模型API，支持使用默认模型或自定义API</p>
+                    </div>
+                    
+                    <div class="config-card">
+                        <div class="config-card-header">
+                            <h3>模型选择</h3>
+                        </div>
+                        <div class="config-card-body">
+                            <div class="form-group">
+                                <label>启用大模型</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="llmEnabled" class="toggle-input">
+                                    <label for="llmEnabled" class="toggle-label">
+                                        <span class="toggle-inner"></span>
+                                        <span class="toggle-switch-btn"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>模型提供商</label>
+                                <select id="llmProvider" class="form-select">
+                                    <option value="default">默认模型（推荐）</option>
+                                    <option value="openai">OpenAI</option>
+                                    <option value="pangu">华为云盘古</option>
+                                    <option value="custom">自定义API</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="config-card" id="apiConfigCard">
+                        <div class="config-card-header">
+                            <h3>API配置</h3>
+                            <span class="config-badge" id="providerBadge">默认模型</span>
+                        </div>
+                        <div class="config-card-body">
+                            <div class="form-group" id="apiKeyGroup">
+                                <label>API密钥 *</label>
+                                <input type="password" id="llmApiKey" class="form-input" placeholder="请输入API密钥">
+                                <span class="form-hint" id="apiKeyHint">联系管理员获取密钥</span>
+                            </div>
+                            
+                            <div class="form-group" id="apiEndpointGroup">
+                                <label>API端点</label>
+                                <input type="text" id="llmApiEndpoint" class="form-input" placeholder="https://api.example.com/v1">
+                                <span class="form-hint">自定义API地址，留空使用默认</span>
+                            </div>
+                            
+                            <div class="form-group" id="modelGroup">
+                                <label>模型名称</label>
+                                <input type="text" id="llmModel" class="form-input" placeholder="gpt-3.5-turbo">
+                                <span class="form-hint" id="modelHint">默认使用最优模型</span>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label>超时时间（秒）</label>
+                                    <input type="number" id="llmTimeout" class="form-input" value="30" min="5" max="120">
+                                </div>
+                                <div class="form-group half">
+                                    <label>最大重试次数</label>
+                                    <input type="number" id="llmMaxRetries" class="form-input" value="3" min="0" max="10">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="config-card" id="defaultModelInfo" style="display: none;">
+                        <div class="config-card-header">
+                            <h3>默认模型说明</h3>
+                        </div>
+                        <div class="config-card-body">
+                            <div class="info-box">
+                                <div class="info-icon">ℹ️</div>
+                                <div class="info-content">
+                                    <p><strong>默认模型</strong>是由系统预配置的大模型服务，无需额外配置即可使用。</p>
+                                    <ul>
+                                        <li>开箱即用，无需API密钥</li>
+                                        <li>针对用户管理场景优化</li>
+                                        <li>支持中文自然语言理解</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="config-actions">
+                        <button class="btn btn-outline" id="testConnectionBtn">
+                            <span>测试连接</span>
+                        </button>
+                        <button class="btn btn-primary" id="saveConfigBtn">
+                            <span>保存配置</span>
+                        </button>
+                    </div>
+                    
+                    <div class="config-status" id="configStatus">
+                        <div class="status-item">
+                            <span class="status-label">当前状态：</span>
+                            <span class="status-value" id="currentStatus">未配置</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">提供商：</span>
+                            <span class="status-value" id="currentProvider">-</span>
                         </div>
                     </div>
                 </div>
