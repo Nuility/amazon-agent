@@ -1,0 +1,44 @@
+# 用户管理智能体系统配置
+
+# 批量操作配置
+max_batch_size: 1000
+
+# 大模型API配置
+enable_llm_integration: false
+llm_api_config:
+  provider: "openai"  # openai | pangu | custom
+  api_key: ""
+  api_endpoint: ""
+  model: ""
+  timeout: 30
+  max_retries: 3
+
+# 热更新配置
+enable_hot_reload: true
+
+# 日志配置
+log_level: "INFO"  # DEBUG | INFO | WARNING | ERROR
+log_file_path: "./logs/operation.log"
+log_max_size: 10485760  # 10MB
+log_backup_count: 5
+
+# 存储配置
+data_storage_type: "file"  # file | sqlite
+data_file_path: "./data/users.json"
+sqlite_db_path: "./data/users.db"
+
+# 用户配置
+user_id_format: "uuid"  # uuid | custom
+default_user_status: "active"
+
+# 性能配置
+cache_enabled: true
+cache_ttl: 300  # 秒
+connection_pool_size: 10
+
+# 安全配置
+sensitive_fields:
+  - "password"
+  - "token"
+  - "secret"
+audit_enabled: true

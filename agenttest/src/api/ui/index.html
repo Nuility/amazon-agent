@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理智能体 - Agent UI</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">🤖</div>
+                    <span class="logo-text">用户管理智能体</span>
+                </div>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-title">功能菜单</div>
+                    <a href="#" class="nav-item active" data-view="chat">
+                        <span class="nav-icon">💬</span>
+                        <span>对话交互</span>
+                    </a>
+                    <a href="#" class="nav-item" data-view="users">
+                        <span class="nav-icon">👥</span>
+                        <span>用户管理</span>
+                    </a>
+                    <a href="#" class="nav-item" data-view="stats">
+                        <span class="nav-icon">📊</span>
+                        <span>数据统计</span>
+                    </a>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-title">快捷操作</div>
+                    <a href="#" class="nav-item" data-action="quick-create">
+                        <span class="nav-icon">➕</span>
+                        <span>快速创建</span>
+                    </a>
+                    <a href="#" class="nav-item" data-action="quick-query">
+                        <span class="nav-icon">🔍</span>
+                        <span>快速查询</span>
+                    </a>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="status-dot online"></span>
+                    <span class="status-text">系统运行中</span>
+                </div>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <h1 class="page-title">对话交互</h1>
+                </div>
+                <div class="top-bar-right">
+                    <button class="btn btn-outline" id="clearChat">
+                        <span>清空对话</span>
+                    </button>
+                    <button class="btn btn-primary" id="refreshBtn">
+                        <span>刷新数据</span>
+                    </button>
+                </div>
+            </header>
+            
+            <div class="content-area" id="chatView">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message assistant">
+                            <div class="message-avatar">🤖</div>
+                            <div class="message-content">
+                                <div class="message-text">
+                                    您好！我是用户管理智能体，可以帮您完成以下操作：
+                                    <ul>
+                                        <li><strong>创建用户</strong> - 创建新的用户账号</li>
+                                        <li><strong>查询用户</strong> - 查看用户列表或单个用户</li>
+                                        <li><strong>更新用户</strong> - 修改用户信息</li>
+                                        <li><strong>删除用户</strong> - 删除用户账号</li>
+                                        <li><strong>统计分析</strong> - 查看用户统计数据</li>
+                                    </ul>
+                                    请输入您的需求，或输入"帮助"查看详细命令。
+                                </div>
+                                <div class="message-time">系统初始化</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-container">
+                        <div class="chat-input-wrapper">
+                            <textarea 
+                                class="chat-input" 
+                                id="chatInput" 
+                                placeholder="输入消息... (按Enter发送，Shift+Enter换行)"
+                                rows="1"
+                            ></textarea>
+                            <button class="send-button" id="sendBtn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="input-hints">
+                            <span>快捷命令：</span>
+                            <code>创建用户</code>
+                            <code>查询所有用户</code>
+                            <code>统计</code>
+                            <code>帮助</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="content-area hidden" id="usersView">
+                <div class="users-container">
+                    <div class="users-toolbar">
+                        <div class="search-box">
+                            <input type="text" placeholder="搜索用户..." id="userSearch">
+                        </div>
+                        <select id="statusFilter" class="status-filter">
+                            <option value="">全部状态</option>
+                            <option value="active">活跃</option>
+                            <option value="inactive">未活跃</option>
+                            <option value="deleted">已删除</option>
+                        </select>
+                        <button class="btn btn-primary" id="addUserBtn">+ 添加用户</button>
+                    </div>
+                    
+                    <div class="users-table-container">
+                        <table class="users-table">
+                            <thead>
+                                <tr>
+                                    <th>用户ID</th>
+                                    <th>用户名</th>
+                                    <th>邮箱</th>
+                                    <th>手机</th>
+                                    <th>状态</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <tr>
+                                    <td colspan="7" class="loading-text">加载中...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="pagination" id="usersPagination">
+                        <button class="page-btn" data-page="prev">上一页</button>
+                        <span class="page-info">第 <span id="currentPage">1</span> 页</span>
+                        <button class="page-btn" data-page="next">下一页</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="content-area hidden" id="statsView">
+                <div class="stats-container">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="totalUsers">-</div>
+                                <div class="stat-label">用户总数</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="activeUsers">-</div>
+                                <div class="stat-label">活跃用户</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">⏸️</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="inactiveUsers">-</div>
+                                <div class="stat-label">未活跃用户</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🗑️</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="deletedUsers">-</div>
+                                <div class="stat-label">已删除用户</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-section">
+                        <h3>状态分布</h3>
+                        <div class="status-chart" id="statusChart">
+                            <div class="chart-bar" data-status="active">
+                                <div class="bar-label">活跃</div>
+                                <div class="bar-container">
+                                    <div class="bar-fill" style="width: 0%"></div>
+                                </div>
+                                <div class="bar-value">0</div>
+                            </div>
+                            <div class="chart-bar" data-status="inactive">
+                                <div class="bar-label">未活跃</div>
+                                <div class="bar-container">
+                                    <div class="bar-fill" style="width: 0%"></div>
+                                </div>
+                                <div class="bar-value">0</div>
+                            </div>
+                            <div class="chart-bar" data-status="deleted">
+                                <div class="bar-label">已删除</div>
+                                <div class="bar-container">
+                                    <div class="bar-fill" style="width: 0%"></div>
+                                </div>
+                                <div class="bar-value">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">添加用户</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <div class="form-group">
+                        <label>用户名 *</label>
+                        <input type="text" name="username" required placeholder="请输入用户名">
+                    </div>
+                    <div class="form-group">
+                        <label>邮箱 *</label>
+                        <input type="email" name="email" required placeholder="请输入邮箱">
+                    </div>
+                    <div class="form-group">
+                        <label>手机号</label>
+                        <input type="tel" name="phone" placeholder="请输入手机号">
+                    </div>
+                    <div class="form-group">
+                        <label>状态</label>
+                        <select name="status">
+                            <option value="active">活跃</option>
+                            <option value="inactive">未活跃</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>标签（逗号分隔）</label>
+                        <input type="text" name="tags" placeholder="标签1, 标签2">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancelModal">取消</button>
+                <button class="btn btn-primary" id="submitModal">确定</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
