@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 from fastapi import Body, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 api_dir = os.path.dirname(os.path.abspath(__file__))
@@ -160,6 +161,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+ui_dir = os.path.join(os.path.dirname(__file__), "ui")
+app.mount("/ui", StaticFiles(directory=ui_dir), name="ui")
 
 
 @app.get("/", response_class=HTMLResponse)
