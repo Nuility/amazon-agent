@@ -40,6 +40,8 @@ env/
 # Logs
 *.log
 logs/
+agenttest/src/runtime_data/
+agenttest/src/data/
 
 # OS
 .DS_Store
