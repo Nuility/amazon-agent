@@ -13,6 +13,17 @@ llm_api_config:
   timeout: 30
   max_retries: 3
 
+# Amazon Ads API 配置
+amazon_ads_config:
+  enabled: false
+  region: "na"   # na | eu | fe
+  client_id: ""
+  client_secret: ""
+  refresh_token: ""
+  profile_id: ""
+  api_program: "report"
+  access_level: "view"
+
 # 热更新配置
 enable_hot_reload: true
 

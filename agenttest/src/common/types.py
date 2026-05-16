@@ -1,19 +1,16 @@
-"""类型定义和数据模型"""
+"""Common types and data models."""
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Generic, TypeVar
 from enum import Enum
-from datetime import datetime
+from typing import Any, Dict, Generic, List, Optional, TypeVar
 
 
 class UserStatus(Enum):
-    """用户状态枚举"""
     ACTIVE = "active"
     INACTIVE = "inactive"
     DELETED = "deleted"
 
 
 class OperationType(Enum):
-    """操作类型枚举"""
     CREATE = "create"
     UPDATE = "update"
     DELETE = "delete"
@@ -27,7 +24,6 @@ class OperationType(Enum):
 
 
 class ErrorCode(Enum):
-    """错误码枚举"""
     SUCCESS = 0
     USER_NOT_FOUND = 1001
     USER_ALREADY_EXISTS = 1002
@@ -43,12 +39,11 @@ class ErrorCode(Enum):
     INTERNAL_ERROR = 1999
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 @dataclass
 class Result(Generic[T]):
-    """统一响应结果"""
     success: bool
     data: Optional[T] = None
     error_code: int = ErrorCode.SUCCESS.value
@@ -56,29 +51,27 @@ class Result(Generic[T]):
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def ok(cls, data: T, metadata: Optional[Dict[str, Any]] = None) -> 'Result[T]':
-        """创建成功结果"""
+    def ok(cls, data: T, metadata: Optional[Dict[str, Any]] = None) -> "Result[T]":
         return cls(
             success=True,
             data=data,
             error_code=ErrorCode.SUCCESS.value,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
     @classmethod
-    def error(cls, error_code: ErrorCode, message: str, metadata: Optional[Dict[str, Any]] = None) -> 'Result[T]':
-        """创建错误结果"""
+    def error(cls, error_code: Any, message: str, metadata: Optional[Dict[str, Any]] = None) -> "Result[T]":
+        normalized_error_code = error_code.value if isinstance(error_code, ErrorCode) else int(error_code)
         return cls(
             success=False,
-            error_code=error_code.value,
+            error_code=normalized_error_code,
             error_message=message,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
 
 @dataclass
 class User:
-    """用户实体"""
     user_id: str
     username: str
     email: str
@@ -91,7 +84,6 @@ class User:
     created_by: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
         return {
             "user_id": self.user_id,
             "username": self.username,
@@ -102,12 +94,11 @@ class User:
             "tags": self.tags,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
-            "created_by": self.created_by
+            "created_by": self.created_by,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'User':
-        """从字典创建"""
+    def from_dict(cls, data: Dict[str, Any]) -> "User":
         return cls(
             user_id=data.get("user_id", ""),
             username=data.get("username", ""),
@@ -118,16 +109,16 @@ class User:
             tags=data.get("tags", []),
             created_at=data.get("created_at", 0),
             updated_at=data.get("updated_at", 0),
-            created_by=data.get("created_by", "")
+            created_by=data.get("created_by", ""),
         )
 
 
 @dataclass
 class SystemConfig:
-    """系统配置"""
     max_batch_size: int = 1000
     enable_llm_integration: bool = False
     llm_api_config: Dict[str, Any] = field(default_factory=dict)
+    amazon_ads_config: Dict[str, Any] = field(default_factory=dict)
     enable_hot_reload: bool = True
     log_level: str = "INFO"
     log_file_path: str = "./logs/operation.log"
@@ -145,11 +136,11 @@ class SystemConfig:
     audit_enabled: bool = True
 
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
         return {
             "max_batch_size": self.max_batch_size,
             "enable_llm_integration": self.enable_llm_integration,
             "llm_api_config": self.llm_api_config,
+            "amazon_ads_config": self.amazon_ads_config,
             "enable_hot_reload": self.enable_hot_reload,
             "log_level": self.log_level,
             "log_file_path": self.log_file_path,
@@ -164,16 +155,16 @@ class SystemConfig:
             "cache_ttl": self.cache_ttl,
             "connection_pool_size": self.connection_pool_size,
             "sensitive_fields": self.sensitive_fields,
-            "audit_enabled": self.audit_enabled
+            "audit_enabled": self.audit_enabled,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'SystemConfig':
-        """从字典创建"""
+    def from_dict(cls, data: Dict[str, Any]) -> "SystemConfig":
         return cls(
             max_batch_size=data.get("max_batch_size", 1000),
             enable_llm_integration=data.get("enable_llm_integration", False),
             llm_api_config=data.get("llm_api_config", {}),
+            amazon_ads_config=data.get("amazon_ads_config", {}),
             enable_hot_reload=data.get("enable_hot_reload", True),
             log_level=data.get("log_level", "INFO"),
             log_file_path=data.get("log_file_path", "./logs/operation.log"),
@@ -188,13 +179,12 @@ class SystemConfig:
             cache_ttl=data.get("cache_ttl", 300),
             connection_pool_size=data.get("connection_pool_size", 10),
             sensitive_fields=data.get("sensitive_fields", ["password", "token", "secret"]),
-            audit_enabled=data.get("audit_enabled", True)
+            audit_enabled=data.get("audit_enabled", True),
         )
 
 
 @dataclass
 class OperationLog:
-    """操作日志"""
     log_id: str
     operation_type: str
     operator: str
@@ -206,7 +196,6 @@ class OperationLog:
     timestamp: int = 0
 
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
         return {
             "log_id": self.log_id,
             "operation_type": self.operation_type,
@@ -216,12 +205,11 @@ class OperationLog:
             "result": self.result,
             "error_message": self.error_message,
             "execution_time": self.execution_time,
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'OperationLog':
-        """从字典创建"""
+    def from_dict(cls, data: Dict[str, Any]) -> "OperationLog":
         return cls(
             log_id=data.get("log_id", ""),
             operation_type=data.get("operation_type", ""),
@@ -231,13 +219,12 @@ class OperationLog:
             result=data.get("result", ""),
             error_message=data.get("error_message", ""),
             execution_time=data.get("execution_time", 0),
-            timestamp=data.get("timestamp", 0)
+            timestamp=data.get("timestamp", 0),
         )
 
 
 @dataclass
 class BatchResult:
-    """批量操作结果"""
     total: int
     success_count: int
     failure_count: int
@@ -245,23 +232,20 @@ class BatchResult:
 
     @property
     def success_rate(self) -> float:
-        """成功率"""
         return self.success_count / self.total if self.total > 0 else 0.0
 
 
 @dataclass
 class Statistics:
-    """统计结果"""
     total_users: int
     status_distribution: Dict[str, int]
     tag_distribution: Dict[str, int]
     attributes_distribution: Dict[str, Dict[str, int]]
 
     def to_dict(self) -> Dict[str, Any]:
-        """转换为字典"""
         return {
             "total_users": self.total_users,
             "status_distribution": self.status_distribution,
             "tag_distribution": self.tag_distribution,
-            "attributes_distribution": self.attributes_distribution
+            "attributes_distribution": self.attributes_distribution,
         }

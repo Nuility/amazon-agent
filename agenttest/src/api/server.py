@@ -3,13 +3,13 @@ import os
 import sys
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import Body, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 api_dir = os.path.dirname(os.path.abspath(__file__))
 src_dir = os.path.dirname(api_dir)
@@ -27,7 +27,7 @@ LIST_KEYWORDS = ("all", "list", "users")
 DELETE_KEYWORDS = ("delete", "remove")
 STATS_KEYWORDS = ("stats", "statistics", "analyze", "analysis")
 HELP_KEYWORDS = ("help", "commands")
-AD_KEYWORDS = ("ad", "ads", "campaign", "campaigns", "acos", "roas")
+AD_KEYWORDS = ("ad", "ads", "campaign", "campaigns", "acos", "roas", "keyword", "ranking")
 AGENT_KEYWORDS = ("agent", "workflow", "optimize ads", "run analysis")
 
 
@@ -54,12 +54,31 @@ class LLMConfigRequest(BaseModel):
 class AgentRunRequest(BaseModel):
     objective: str = "Improve campaign efficiency while protecting profitable growth."
     filters: Optional[Dict[str, Any]] = None
+    auto_execute: bool = False
+    execution_limit: int = 3
+    dry_run: bool = True
 
 
 class PromptTemplateRequest(BaseModel):
     system_role: str
     task_template: str
     output_style: str
+
+
+class ImportRecordsRequest(BaseModel):
+    records: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class ExecuteRecommendationsRequest(BaseModel):
+    recommendations: List[Dict[str, Any]] = Field(default_factory=list)
+    dry_run: bool = True
+    limit: Optional[int] = None
+
+
+class AmazonAdsReportRequest(BaseModel):
+    profile_id: Optional[str] = None
+    start_date: str
+    end_date: str
 
 
 def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
@@ -77,10 +96,7 @@ def _build_statistics_payload(filters: Optional[Dict[str, Any]] = None) -> Dict[
     result = app.analysis_service.get_statistics(filters)
 
     if not result.success or not result.data:
-        raise HTTPException(
-            status_code=500,
-            detail=result.error_message or "Failed to load statistics",
-        )
+        raise HTTPException(status_code=500, detail=result.error_message or "Failed to load statistics")
 
     stats = result.data
     return {
@@ -96,10 +112,7 @@ def _build_ad_summary_payload(filters: Optional[Dict[str, Any]] = None) -> Dict[
     result = app.ad_agent_service.get_summary(filters)
 
     if not result.success or not result.data:
-        raise HTTPException(
-            status_code=500,
-            detail=result.error_message or "Failed to load ad summary",
-        )
+        raise HTTPException(status_code=500, detail=result.error_message or "Failed to load ad summary")
 
     return result.data.to_dict()
 
@@ -124,6 +137,10 @@ def _run_analysis(analysis_type: str, params: Optional[Dict[str, Any]] = None):
         return app.ad_agent_service.get_summary(params.get("filters"))
     if normalized == "ad_recommendations":
         return app.ad_agent_service.get_recommendations(params.get("filters"))
+    if normalized == "keyword_rankings":
+        return app.ad_agent_service.get_keyword_rankings(params.get("filters"))
+    if normalized == "search_terms":
+        return app.ad_agent_service.analyze_search_terms(params.get("filters"))
 
     raise HTTPException(status_code=400, detail=f"Unknown analysis type: {analysis_type}")
 
@@ -143,14 +160,13 @@ async def lifespan(app: FastAPI):
         raise RuntimeError("Application initialization failed")
 
     yield
-
     app_instance.shutdown()
 
 
 app = FastAPI(
-    title="User Management Agent API",
-    description="Agent UI backend API service",
-    version="1.0.0",
+    title="Amazon Ads Agent API",
+    description="Backend API for the Amazon Ads agent workspace",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -168,7 +184,6 @@ app.mount("/ui", StaticFiles(directory=ui_dir), name="ui")
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    """Return the bundled Agent UI page."""
     ui_path = os.path.join(os.path.dirname(__file__), "ui", "index.html")
     if os.path.exists(ui_path):
         with open(ui_path, "r", encoding="utf-8") as f:
@@ -178,13 +193,11 @@ async def root():
 
 @app.get("/api/health")
 async def health_check():
-    """Service health check."""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
 @app.post("/api/chat")
 async def chat(message: ChatMessage):
-    """Simple chat-style interface for common user-management actions."""
     app = _require_app()
 
     try:
@@ -210,15 +223,6 @@ async def chat(message: ChatMessage):
         elif _contains_any(msg, DELETE_KEYWORDS):
             response_text = "Please provide the user ID to delete."
             data = {"action": "delete", "hint": "user_id"}
-        elif _contains_any(msg, AD_KEYWORDS):
-            ad_summary = _build_ad_summary_payload()
-            response_text = (
-                f"Ad campaigns: {ad_summary['total_campaigns']}\n"
-                f"Spend: {ad_summary['total_cost']}\n"
-                f"Sales: {ad_summary['total_sales']}\n"
-                f"ROAS: {ad_summary['average_roas']}"
-            )
-            data = {"ad_summary": ad_summary}
         elif _contains_any(msg, AGENT_KEYWORDS):
             result = app.ad_agent_service.run_agent_workflow()
             if result.success and result.data:
@@ -231,6 +235,16 @@ async def chat(message: ChatMessage):
                 data = {"agent_run": agent_run}
             else:
                 response_text = f"Agent workflow failed: {result.error_message}"
+        elif _contains_any(msg, AD_KEYWORDS):
+            ad_summary = _build_ad_summary_payload()
+            response_text = (
+                f"Campaigns: {ad_summary['total_campaigns']}\n"
+                f"Tracked keywords: {ad_summary['tracked_keywords']}\n"
+                f"Spend: {ad_summary['total_cost']}\n"
+                f"Sales: {ad_summary['total_sales']}\n"
+                f"ROAS: {ad_summary['average_roas']}"
+            )
+            data = {"ad_summary": ad_summary}
         elif _contains_any(msg, STATS_KEYWORDS):
             statistics = _build_statistics_payload()
             active_users = statistics["status_distribution"].get("active", 0)
@@ -244,7 +258,8 @@ async def chat(message: ChatMessage):
                 "3. query user by id\n"
                 "4. delete user\n"
                 "5. stats\n"
-                "6. help"
+                "6. run ad agent\n"
+                "7. help"
             )
         else:
             response_text = "Unknown command. Enter help to view available commands."
@@ -258,16 +273,11 @@ async def chat(message: ChatMessage):
     except HTTPException:
         raise
     except Exception as e:
-        return {
-            "success": False,
-            "message": f"Processing failed: {str(e)}",
-            "timestamp": datetime.now().isoformat(),
-        }
+        return {"success": False, "message": f"Processing failed: {str(e)}", "timestamp": datetime.now().isoformat()}
 
 
 @app.post("/api/execute")
 async def execute_command(request: CommandRequest):
-    """Execute a structured command from the UI."""
     app = _require_app()
 
     try:
@@ -276,10 +286,7 @@ async def execute_command(request: CommandRequest):
         result = None
 
         if command == "create_user":
-            result = app.user_service.create_user(
-                params,
-                operator=params.get("operator", "ui_user"),
-            )
+            result = app.user_service.create_user(params, operator=params.get("operator", "ui_user"))
         elif command == "get_user":
             result = app.user_service.get_user(params.get("user_id"))
         elif command == "update_user":
@@ -301,9 +308,20 @@ async def execute_command(request: CommandRequest):
                 page_size=params.get("page_size", 20),
             )
         elif command == "analyze":
-            result = _run_analysis(
-                params.get("analysis_type", "basic"),
-                params.get("params"),
+            result = _run_analysis(params.get("analysis_type", "basic"), params.get("params"))
+        elif command == "run_ad_agent":
+            result = app.ad_agent_service.run_agent_workflow(
+                objective=params.get("objective", AgentRunRequest().objective),
+                filters=params.get("filters"),
+                auto_execute=params.get("auto_execute", False),
+                execution_limit=params.get("execution_limit", 3),
+                dry_run=params.get("dry_run", True),
+            )
+        elif command == "execute_recommendations":
+            result = app.ad_agent_service.execute_recommendations(
+                params.get("recommendations", []),
+                dry_run=params.get("dry_run", True),
+                limit=params.get("limit"),
             )
         else:
             raise HTTPException(status_code=400, detail=f"Unknown command: {command}")
@@ -312,11 +330,7 @@ async def execute_command(request: CommandRequest):
             response_data = result.data
             if hasattr(response_data, "to_dict"):
                 response_data = response_data.to_dict()
-            return {
-                "success": True,
-                "data": response_data,
-                "message": "Execution succeeded",
-            }
+            return {"success": True, "data": response_data, "message": "Execution succeeded"}
 
         return {
             "success": False,
@@ -335,52 +349,35 @@ async def get_users(
     page_size: int = Query(20, ge=1, le=100),
     status: Optional[str] = None,
 ):
-    """Fetch a page of users."""
     app = _require_app()
-
-    filters = {}
-    if status:
-        filters["status"] = status
-
+    filters = {"status": status} if status else {}
     result = app.user_service.list_users(filters, page, page_size)
     if result.success:
         return result.data
-
     raise HTTPException(status_code=500, detail=result.error_message)
 
 
 @app.get("/api/users/{user_id}")
 async def get_user(user_id: str):
-    """Fetch one user by id."""
     app = _require_app()
-
     result = app.user_service.get_user(user_id)
     if result.success:
         return result.data.to_dict()
-
     raise HTTPException(status_code=404, detail=result.error_message)
 
 
 @app.post("/api/users")
 async def create_user(user_data: Dict[str, Any] = Body(...)):
-    """Create a user."""
     app = _require_app()
-
-    result = app.user_service.create_user(
-        user_data,
-        operator=user_data.get("operator", "ui_user"),
-    )
+    result = app.user_service.create_user(user_data, operator=user_data.get("operator", "ui_user"))
     if result.success:
         return {"success": True, "user": result.data.to_dict()}
-
     return {"success": False, "error": result.error_message}
 
 
 @app.put("/api/users/{user_id}")
 async def update_user(user_id: str, update_data: Dict[str, Any] = Body(...)):
-    """Update a user."""
     app = _require_app()
-
     result = app.user_service.update_user(
         user_id,
         update_data,
@@ -388,129 +385,235 @@ async def update_user(user_id: str, update_data: Dict[str, Any] = Body(...)):
     )
     if result.success:
         return {"success": True, "user": result.data.to_dict()}
-
     return {"success": False, "error": result.error_message}
 
 
 @app.delete("/api/users/{user_id}")
 async def delete_user(user_id: str, logical: bool = True):
-    """Delete a user."""
     app = _require_app()
-
-    result = app.user_service.delete_user(
-        user_id,
-        logical=logical,
-        operator="ui_user",
-    )
+    result = app.user_service.delete_user(user_id, logical=logical, operator="ui_user")
     if result.success:
         return {"success": True}
-
     return {"success": False, "error": result.error_message}
 
 
 @app.get("/api/statistics")
 async def get_statistics():
-    """Return aggregate user statistics."""
     return _build_statistics_payload()
 
 
 @app.get("/api/ad-insights/summary")
 async def get_ad_summary():
-    """Return aggregate ad performance metrics."""
     return _build_ad_summary_payload()
 
 
 @app.get("/api/ad-insights/campaigns")
 async def get_ad_campaigns(status: Optional[str] = None):
-    """Return seeded ad campaign performance rows."""
     app = _require_app()
     filters = {"status": status} if status else None
     result = app.ad_agent_service.list_campaigns(filters)
     if result.success:
         return {"campaigns": result.data}
+    raise HTTPException(status_code=500, detail=result.error_message)
 
+
+@app.get("/api/ad-insights/keyword-rankings")
+async def get_keyword_rankings(
+    marketplace: Optional[str] = None,
+    asin: Optional[str] = None,
+    campaign_id: Optional[str] = None,
+):
+    app = _require_app()
+    filters = {k: v for k, v in {"marketplace": marketplace, "asin": asin, "campaign_id": campaign_id}.items() if v}
+    result = app.ad_agent_service.get_keyword_rankings(filters or None)
+    if result.success:
+        return {"keyword_rankings": result.data}
+    raise HTTPException(status_code=500, detail=result.error_message)
+
+
+@app.get("/api/ad-insights/search-terms")
+async def get_search_term_insights(
+    marketplace: Optional[str] = None,
+    asin: Optional[str] = None,
+    campaign_id: Optional[str] = None,
+):
+    app = _require_app()
+    filters = {k: v for k, v in {"marketplace": marketplace, "asin": asin, "campaign_id": campaign_id}.items() if v}
+    result = app.ad_agent_service.analyze_search_terms(filters or None)
+    if result.success:
+        return {"search_terms": result.data}
     raise HTTPException(status_code=500, detail=result.error_message)
 
 
 @app.get("/api/ad-insights/recommendations")
-async def get_ad_recommendations(status: Optional[str] = None):
-    """Return starter optimization recommendations for ad campaigns."""
+async def get_ad_recommendations(
+    marketplace: Optional[str] = None,
+    asin: Optional[str] = None,
+    campaign_id: Optional[str] = None,
+):
     app = _require_app()
-    filters = {"status": status} if status else None
-    result = app.ad_agent_service.get_recommendations(filters)
+    filters = {k: v for k, v in {"marketplace": marketplace, "asin": asin, "campaign_id": campaign_id}.items() if v}
+    result = app.ad_agent_service.get_recommendations(filters or None)
     if result.success:
         return {"recommendations": result.data}
-
     raise HTTPException(status_code=500, detail=result.error_message)
+
+
+@app.post("/api/ad-data/import/reports")
+async def import_ad_reports(request: ImportRecordsRequest):
+    app = _require_app()
+    result = app.ad_agent_service.import_campaign_reports(request.records)
+    if result.success:
+        return {"success": True, "data": result.data}
+    return {"success": False, "error": result.error_message}
+
+
+@app.post("/api/ad-data/import/keyword-rankings")
+async def import_keyword_rankings(request: ImportRecordsRequest):
+    app = _require_app()
+    result = app.ad_agent_service.import_keyword_rankings(request.records)
+    if result.success:
+        return {"success": True, "data": result.data}
+    return {"success": False, "error": result.error_message}
+
+
+@app.get("/api/amazon-ads/test")
+async def test_amazon_ads_connection():
+    app = _require_app()
+    result = app.amazon_ads_service.test_connection()
+    if result.success:
+        return {"success": True, "data": result.data}
+    return {"success": False, "error": result.error_message}
+
+
+@app.get("/api/amazon-ads/profiles")
+async def get_amazon_ads_profiles():
+    app = _require_app()
+    result = app.amazon_ads_service.list_profiles()
+    if result.success:
+        return {"success": True, "profiles": result.data}
+    return {"success": False, "error": result.error_message}
+
+
+@app.get("/api/amazon-ads/campaigns")
+async def get_amazon_ads_campaigns(profile_id: Optional[str] = None):
+    app = _require_app()
+    result = app.amazon_ads_service.list_sp_campaigns(profile_id=profile_id)
+    if result.success:
+        return {"success": True, "campaigns": result.data}
+    return {"success": False, "error": result.error_message}
+
+
+@app.post("/api/amazon-ads/reports/search-terms")
+async def get_amazon_ads_search_term_report(request: AmazonAdsReportRequest):
+    app = _require_app()
+    result = app.amazon_ads_service.fetch_sp_search_term_report(
+        profile_id=request.profile_id,
+        start_date=request.start_date,
+        end_date=request.end_date,
+    )
+    if result.success:
+        return {"success": True, "data": result.data}
+    return {"success": False, "error": result.error_message}
+
+
+@app.post("/api/amazon-ads/reports/campaigns/sync")
+async def sync_amazon_ads_campaign_report(request: AmazonAdsReportRequest):
+    app = _require_app()
+    result = app.amazon_ads_service.sync_campaign_report_to_local(
+        profile_id=request.profile_id,
+        start_date=request.start_date,
+        end_date=request.end_date,
+    )
+    if result.success:
+        return {"success": True, "data": result.data}
+    return {"success": False, "error": result.error_message}
 
 
 @app.post("/api/ad-agent/run")
 async def run_ad_agent(request: AgentRunRequest):
-    """Run the starter ad agent workflow."""
     app = _require_app()
     result = app.ad_agent_service.run_agent_workflow(
         objective=request.objective,
         filters=request.filters,
+        auto_execute=request.auto_execute,
+        execution_limit=request.execution_limit,
+        dry_run=request.dry_run,
     )
     if result.success and result.data:
         return {"success": True, "run": result.data.to_dict()}
-
     return {"success": False, "error": result.error_message}
+
+
+@app.post("/api/ad-agent/execute")
+async def execute_ad_recommendations(request: ExecuteRecommendationsRequest):
+    app = _require_app()
+    result = app.ad_agent_service.execute_recommendations(
+        recommendations=request.recommendations,
+        dry_run=request.dry_run,
+        limit=request.limit,
+    )
+    if result.success:
+        return {"success": True, "executions": result.data}
+    return {"success": False, "error": result.error_message}
+
+
+@app.get("/api/ad-agent/runs")
+async def get_ad_agent_runs():
+    app = _require_app()
+    result = app.ad_agent_service.list_workflow_runs()
+    if result.success:
+        return {"runs": result.data}
+    raise HTTPException(status_code=500, detail=result.error_message)
+
+
+@app.get("/api/ad-agent/executions")
+async def get_ad_agent_executions():
+    app = _require_app()
+    result = app.ad_agent_service.list_action_executions()
+    if result.success:
+        return {"executions": result.data}
+    raise HTTPException(status_code=500, detail=result.error_message)
 
 
 @app.get("/api/ad-agent/prompt-template")
 async def get_ad_agent_prompt_template():
-    """Return the current ad agent prompt template."""
     app = _require_app()
     result = app.prompt_engineering_service.get_template()
     if result.success:
         return {"success": True, "template": result.data}
-
     return {"success": False, "error": result.error_message}
 
 
 @app.post("/api/ad-agent/prompt-template")
 async def update_ad_agent_prompt_template(request: PromptTemplateRequest):
-    """Update the current ad agent prompt template."""
     app = _require_app()
     result = app.prompt_engineering_service.update_template(request.model_dump())
     if result.success:
         return {"success": True, "template": result.data}
-
     return {"success": False, "error": result.error_message}
 
 
 @app.get("/api/config")
 async def get_config():
-    """Return the current application config."""
     app = _require_app()
     return app.config.to_dict()
 
 
 @app.get("/api/config/llm")
 async def get_llm_config():
-    """Return LLM integration settings."""
     app = _require_app()
-    return {
-        "enabled": app.config.enable_llm_integration,
-        "config": app.config.llm_api_config,
-    }
+    return {"enabled": app.config.enable_llm_integration, "config": app.config.llm_api_config}
 
 
 @app.post("/api/config/llm")
 async def update_llm_config(config: LLMConfigRequest):
-    """Update LLM integration settings."""
     app = _require_app()
 
     try:
         import yaml
 
-        config_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "config",
-            "config.yaml",
-        )
-
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "config.yaml")
         with open(config_path, "r", encoding="utf-8") as f:
             current_config = yaml.safe_load(f) or {}
 
@@ -532,20 +635,17 @@ async def update_llm_config(config: LLMConfigRequest):
 
         from infrastructure.llm_client import create_llm_client
 
-        app.analysis_service.llm_client = create_llm_client(current_config["llm_api_config"])
+        llm_client = create_llm_client(current_config["llm_api_config"])
+        app.analysis_service.llm_client = llm_client
+        app.ad_agent_service.llm_client = llm_client
 
-        return {
-            "success": True,
-            "message": "Config updated",
-            "config": current_config["llm_api_config"],
-        }
+        return {"success": True, "message": "Config updated", "config": current_config["llm_api_config"]}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 
 @app.post("/api/config/llm/test")
 async def test_llm_connection(config: LLMConfigRequest):
-    """Test the configured LLM connection."""
     try:
         from infrastructure.llm_client import create_llm_client
 
@@ -557,38 +657,23 @@ async def test_llm_connection(config: LLMConfigRequest):
             "timeout": config.timeout,
             "max_retries": config.max_retries,
         }
-
         llm_client = create_llm_client(llm_config)
 
         if config.provider == "mock":
-            return {
-                "success": True,
-                "message": "Mock client is always available.",
-            }
+            return {"success": True, "message": "Mock client is always available."}
 
         try:
             result = llm_client.call("test connection")
-            return {
-                "success": True,
-                "message": "Connection succeeded",
-                "response": result[:100] if result else "",
-            }
+            return {"success": True, "message": "Connection succeeded", "response": result[:100] if result else ""}
         except NotImplementedError:
-            return {
-                "success": False,
-                "error": "The configured LLM client is still a placeholder implementation.",
-            }
+            return {"success": False, "error": "The configured LLM client is still a placeholder implementation."}
         except Exception as e:
-            return {
-                "success": False,
-                "error": f"Connection failed: {str(e)}",
-            }
+            return {"success": False, "error": f"Connection failed: {str(e)}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 
 def run_server(host: str = "0.0.0.0", port: int = 8000):
-    """Run the FastAPI service."""
     import uvicorn
 
     uvicorn.run(app, host=host, port=port)
