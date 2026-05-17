@@ -1,0 +1,64 @@
+{
+  "ad_reports": {
+    "cmp-001:2026-05-13": {
+      "campaign_id": "cmp-001",
+      "campaign_name": "Sponsored Products - Wireless Charger",
+      "date": "2026-05-13",
+      "impressions": 12000,
+      "clicks": 420,
+      "cost": 315.4,
+      "orders": 26,
+      "sales": 1280.0,
+      "status": "enabled",
+      "tags": [
+        "sponsored_products",
+        "electronics"
+      ],
+      "ctr": 0.035,
+      "cvr": 0.06190476190476191,
+      "cpc": 0.7509523809523809,
+      "acos": 0.24640625,
+      "roas": 4.058338617628409
+    },
+    "cmp-002:2026-05-13": {
+      "campaign_id": "cmp-002",
+      "campaign_name": "Sponsored Products - Phone Case",
+      "date": "2026-05-13",
+      "impressions": 15800,
+      "clicks": 390,
+      "cost": 288.9,
+      "orders": 11,
+      "sales": 512.0,
+      "status": "enabled",
+      "tags": [
+        "sponsored_products",
+        "accessories"
+      ],
+      "ctr": 0.024683544303797468,
+      "cvr": 0.028205128205128206,
+      "cpc": 0.7407692307692307,
+      "acos": 0.5642578125,
+      "roas": 1.7722395292488753
+    },
+    "cmp-003:2026-05-13": {
+      "campaign_id": "cmp-003",
+      "campaign_name": "Sponsored Brands - Desk Lamp",
+      "date": "2026-05-13",
+      "impressions": 8400,
+      "clicks": 165,
+      "cost": 142.7,
+      "orders": 18,
+      "sales": 940.0,
+      "status": "enabled",
+      "tags": [
+        "sponsored_brands",
+        "home"
+      ],
+      "ctr": 0.019642857142857142,
+      "cvr": 0.10909090909090909,
+      "cpc": 0.8648484848484848,
+      "acos": 0.15180851063829787,
+      "roas": 6.587245970567625
+    }
+  }
+}

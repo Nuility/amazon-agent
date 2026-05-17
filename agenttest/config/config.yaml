@@ -1,0 +1,55 @@
+# 用户管理智能体系统配置
+
+# 批量操作配置
+max_batch_size: 1000
+
+# 大模型API配置
+enable_llm_integration: true
+llm_api_config:
+  provider: "minimax"  # openai | pangu | minimax | mock
+  api_key: "sk-cp-Ncj-uF4f8eP2c4wtY8UlgsDWzEsLkhutCKH2acuLpgIAbwYVArH7JNR0kfANM7Cp4GC7LXx2gYCuMjowvXwBlj2bVc3uwpEZlq3Gq9Jkbhk_ZFx1pVZcVgw"
+  api_endpoint: "https://api.minimaxi.com/anthropic"
+  model: "MiniMax-M2.7"
+  timeout: 30
+  max_retries: 3
+
+# Amazon Ads API 配置
+amazon_ads_config:
+  enabled: false
+  region: "na"   # na | eu | fe
+  client_id: ""
+  client_secret: ""
+  refresh_token: ""
+  profile_id: ""
+  api_program: "report"
+  access_level: "view"
+
+# 热更新配置
+enable_hot_reload: true
+
+# 日志配置
+log_level: "INFO"  # DEBUG | INFO | WARNING | ERROR
+log_file_path: "./logs/operation.log"
+log_max_size: 10485760  # 10MB
+log_backup_count: 5
+
+# 存储配置
+data_storage_type: "file"  # file | sqlite
+data_file_path: "./data/users.json"
+sqlite_db_path: "./data/users.db"
+
+# 用户配置
+user_id_format: "uuid"  # uuid | custom
+default_user_status: "active"
+
+# 性能配置
+cache_enabled: true
+cache_ttl: 300  # 秒
+connection_pool_size: 10
+
+# 安全配置
+sensitive_fields:
+  - "password"
+  - "token"
+  - "secret"
+audit_enabled: true

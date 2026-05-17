@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon Ads Agent Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/ui/styles.css">
+</head>
+<body>
+    <div class="app-shell">
+        <div class="ambient ambient-one"></div>
+        <div class="ambient ambient-two"></div>
+
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-mark">
+                    <span>A</span>
+                </div>
+                <div class="logo-copy">
+                    <div class="eyebrow" data-i18n="brandEyebrow">Amazon Ads AI</div>
+                    <div class="logo-text" data-i18n="brandTitle">Agent Console</div>
+                </div>
+            </div>
+
+            <div class="sidebar-panel">
+                <div class="sidebar-panel-title" data-i18n="workspaceTitle">Workspace</div>
+                <nav class="sidebar-nav">
+                    <a href="#" class="nav-item active" data-view="chat">
+                        <span class="nav-glyph">C</span>
+                        <div>
+                            <span data-i18n="navChat">Command Center</span>
+                            <small data-i18n="navChatHint">Overview and guided chat</small>
+                        </div>
+                    </a>
+                    <a href="#" class="nav-item" data-view="users">
+                        <span class="nav-glyph">U</span>
+                        <div>
+                            <span data-i18n="navUsers">Entities</span>
+                            <small data-i18n="navUsersHint">Users and operators</small>
+                        </div>
+                    </a>
+                    <a href="#" class="nav-item" data-view="stats">
+                        <span class="nav-glyph">I</span>
+                        <div>
+                            <span data-i18n="navStats">Insights</span>
+                            <small data-i18n="navStatsHint">Live metrics and charts</small>
+                        </div>
+                    </a>
+                    <a href="#" class="nav-item" data-view="agent-lab">
+                        <span class="nav-glyph">S</span>
+                        <div>
+                            <span data-i18n="navAgentLab">Agent Studio</span>
+                            <small data-i18n="navAgentLabHint">Workflow and prompt design</small>
+                        </div>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="sidebar-panel">
+                <div class="sidebar-panel-title" data-i18n="settingsTitle">Settings</div>
+                <nav class="sidebar-nav">
+                    <a href="#" class="nav-item" data-view="llm-config">
+                        <span class="nav-glyph">L</span>
+                        <div>
+                            <span data-i18n="navLlm">LLM Setup</span>
+                            <small data-i18n="navLlmHint">Provider and model settings</small>
+                        </div>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <div>
+                        <div class="status-label" data-i18n="serviceStatusLabel">Service status</div>
+                        <div class="status-text">Checking...</div>
+                    </div>
+                </div>
+                <div class="status-pill" data-i18n="statusPill">Automation ready</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <div class="eyebrow" data-i18n="topEyebrow">Intelligent operations dashboard</div>
+                    <h1 class="page-title">Command Center</h1>
+                </div>
+                <div class="top-bar-right">
+                    <div class="language-switcher">
+                        <span class="lang-badge" id="currentLanguageLabel">EN</span>
+                        <select class="lang-select" id="languageSelect" aria-label="Language selector" data-i18n-aria-label="languageSelectorAria"></select>
+                    </div>
+                    <button class="btn btn-outline" id="clearChat" type="button">
+                        <span data-i18n="clearChat">Clear Chat</span>
+                    </button>
+                    <button class="btn btn-primary" id="refreshBtn" type="button">
+                        <span data-i18n="refresh">Refresh</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-area" id="chatView">
+                <section class="hero-panel">
+                    <div class="hero-copy">
+                        <div class="hero-tag" data-i18n="heroTag">Amazon Ads Agent System</div>
+                        <h2 data-i18n="heroTitle">From search term mining to campaign optimization in one workspace.</h2>
+                        <p data-i18n="heroDesc">Build an agent that can analyze search ads, recommend actions, optimize bidding strategy, and orchestrate prompt-driven workflows with a polished multilingual console.</p>
+                        <div class="hero-actions">
+                            <button class="btn btn-primary" id="heroRunAgentBtn" type="button" data-target-view="agent-lab">
+                                <span data-i18n="heroPrimary">Open Agent Studio</span>
+                            </button>
+                            <button class="btn btn-outline" id="heroViewStatsBtn" type="button" data-target-view="stats">
+                                <span data-i18n="heroSecondary">View Insight Board</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="hero-visual">
+                        <div class="radar-card">
+                            <div class="radar-header">
+                                <span data-i18n="heroVisualTitle">Optimization signal</span>
+                                <span class="radar-trend" data-i18n="heroVisualTrend">+18% efficiency</span>
+                            </div>
+                            <div class="radar-graphic">
+                                <div class="radar-ring ring-1"></div>
+                                <div class="radar-ring ring-2"></div>
+                                <div class="radar-ring ring-3"></div>
+                                <div class="radar-path"></div>
+                                <div class="radar-node node-1"></div>
+                                <div class="radar-node node-2"></div>
+                                <div class="radar-node node-3"></div>
+                                <div class="radar-node node-4"></div>
+                            </div>
+                            <div class="mini-metrics">
+                                <div>
+                                    <strong data-i18n="metricCtr">CTR</strong>
+                                    <span>3.7%</span>
+                                </div>
+                                <div>
+                                    <strong data-i18n="metricAcos">ACOS</strong>
+                                    <span>21.4%</span>
+                                </div>
+                                <div>
+                                    <strong data-i18n="metricRoas">ROAS</strong>
+                                    <span>4.6</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="overview-grid">
+                    <article class="overview-card">
+                        <div class="overview-icon">01</div>
+                        <h3 data-i18n="overviewOneTitle">Search Mining</h3>
+                        <p data-i18n="overviewOneDesc">Capture valuable search terms, isolate waste, and feed reusable insights into the recommendation loop.</p>
+                    </article>
+                    <article class="overview-card">
+                        <div class="overview-icon">02</div>
+                        <h3 data-i18n="overviewTwoTitle">Auto Optimization</h3>
+                        <p data-i18n="overviewTwoDesc">Turn diagnostics into budget moves, bid tuning, negative keyword suggestions, and guardrail-backed actions.</p>
+                    </article>
+                    <article class="overview-card">
+                        <div class="overview-icon">03</div>
+                        <h3 data-i18n="overviewThreeTitle">Prompt Workflow</h3>
+                        <p data-i18n="overviewThreeDesc">Design structured prompts and chain them into repeatable ad analysis workflows across teams.</p>
+                    </article>
+                </section>
+
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages"></div>
+
+                    <div class="chat-input-container">
+                        <div class="chat-input-wrapper">
+                            <textarea class="chat-input" id="chatInput" data-i18n-placeholder="chatPlaceholder" rows="1"></textarea>
+                            <button class="send-button" id="sendBtn" type="button" aria-label="Send message" data-i18n-aria-label="sendMessageAria">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="input-hints">
+                            <span data-i18n="quickPrompts">Quick prompts:</span>
+                            <code>help</code>
+                            <code>query all users</code>
+                            <code>stats</code>
+                            <code>create user</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-area hidden" id="usersView">
+                <div class="panel-stack">
+                    <section class="feature-banner">
+                        <div>
+                            <div class="eyebrow" data-i18n="entityBannerEyebrow">Operator data layer</div>
+                            <h2 data-i18n="entityBannerTitle">Manage the people behind campaign decisions.</h2>
+                        </div>
+                        <div class="feature-banner-stats">
+                            <div>
+                                <strong id="entityBannerActive">24</strong>
+                                <span data-i18n="entityBannerMetricOne">Active operators</span>
+                            </div>
+                            <div>
+                                <strong id="entityBannerCoverage">92%</strong>
+                                <span data-i18n="entityBannerMetricTwo">Workflow coverage</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="users-container">
+                        <div class="users-toolbar">
+                            <div class="search-box">
+                                <input type="text" id="userSearch" data-i18n-placeholder="userSearchPlaceholder">
+                            </div>
+                            <select id="statusFilter" class="status-filter">
+                                <option value="" data-i18n="filterAllStatuses">All statuses</option>
+                                <option value="active" data-i18n="statusActive">Active</option>
+                                <option value="inactive" data-i18n="statusInactive">Inactive</option>
+                                <option value="deleted" data-i18n="statusDeleted">Deleted</option>
+                            </select>
+                            <button class="btn btn-primary" id="addUserBtn" type="button" data-i18n="addUser">Add User</button>
+                        </div>
+
+                        <div class="users-table-container glass-card">
+                            <table class="users-table">
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="tableUserId">User ID</th>
+                                        <th data-i18n="tableUsername">Username</th>
+                                        <th data-i18n="tableEmail">Email</th>
+                                        <th data-i18n="tablePhone">Phone</th>
+                                        <th data-i18n="tableStatus">Status</th>
+                                        <th data-i18n="tableCreated">Created</th>
+                                        <th data-i18n="tableActions">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <tr>
+                                        <td colspan="7" class="loading-text" data-i18n="loadingUsers">Loading users...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="pagination" id="usersPagination">
+                            <button class="page-btn" data-page="prev" type="button" data-i18n="previous">Previous</button>
+                            <span class="page-info"><span data-i18n="page">Page</span> <span id="currentPage">1</span></span>
+                            <button class="page-btn" data-page="next" type="button" data-i18n="next">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-area hidden" id="statsView">
+                <div class="stats-container">
+                    <section class="feature-banner feature-banner-dark">
+                        <div>
+                            <div class="eyebrow" data-i18n="insightEyebrow">Insight board</div>
+                            <h2 data-i18n="insightTitle">A clearer picture of account health and workflow maturity.</h2>
+                        </div>
+                        <div class="sparkline-card">
+                            <div class="sparkline-bars">
+                                <span style="height: 32%"></span>
+                                <span style="height: 48%"></span>
+                                <span style="height: 41%"></span>
+                                <span style="height: 64%"></span>
+                                <span style="height: 57%"></span>
+                                <span style="height: 76%"></span>
+                                <span style="height: 88%"></span>
+                            </div>
+                            <div class="sparkline-label" data-i18n="insightSparklineLabel">Workflow confidence trend</div>
+                        </div>
+                    </section>
+
+                    <div class="stats-grid">
+                        <div class="stat-card accent-blue">
+                            <div class="stat-icon">T</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="totalUsers">-</div>
+                                <div class="stat-label" data-i18n="totalUsers">Total Users</div>
+                            </div>
+                        </div>
+                        <div class="stat-card accent-green">
+                            <div class="stat-icon">A</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="activeUsers">-</div>
+                                <div class="stat-label" data-i18n="activeUsers">Active Users</div>
+                            </div>
+                        </div>
+                        <div class="stat-card accent-amber">
+                            <div class="stat-icon">I</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="inactiveUsers">-</div>
+                                <div class="stat-label" data-i18n="inactiveUsers">Inactive Users</div>
+                            </div>
+                        </div>
+                        <div class="stat-card accent-red">
+                            <div class="stat-icon">D</div>
+                            <div class="stat-content">
+                                <div class="stat-value" id="deletedUsers">-</div>
+                                <div class="stat-label" data-i18n="deletedUsers">Deleted Users</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chart-layout">
+                        <section class="chart-section glass-card">
+                            <div class="section-heading">
+                                <h3 data-i18n="statusDistribution">Status Distribution</h3>
+                                <span class="section-note" data-i18n="statusDistributionNote">Synced from backend statistics</span>
+                            </div>
+                            <div class="status-chart" id="statusChart">
+                                <div class="chart-bar" data-status="active">
+                                    <div class="bar-label" data-i18n="statusActive">Active</div>
+                                    <div class="bar-container">
+                                        <div class="bar-fill" style="width: 0%"></div>
+                                    </div>
+                                    <div class="bar-value">0</div>
+                                </div>
+                                <div class="chart-bar" data-status="inactive">
+                                    <div class="bar-label" data-i18n="statusInactive">Inactive</div>
+                                    <div class="bar-container">
+                                        <div class="bar-fill" style="width: 0%"></div>
+                                    </div>
+                                    <div class="bar-value">0</div>
+                                </div>
+                                <div class="chart-bar" data-status="deleted">
+                                    <div class="bar-label" data-i18n="statusDeleted">Deleted</div>
+                                    <div class="bar-container">
+                                        <div class="bar-fill" style="width: 0%"></div>
+                                    </div>
+                                    <div class="bar-value">0</div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="chart-section glass-card donut-panel">
+                            <div class="section-heading">
+                                <h3 data-i18n="agentCoverageTitle">Agent Coverage</h3>
+                                <span class="section-note" data-i18n="agentCoverageNote">Visual planning layer</span>
+                            </div>
+                            <div class="donut-wrap">
+                                <div class="donut-chart">
+                                    <div class="donut-center">
+                                        <strong>92%</strong>
+                                        <span data-i18n="donutCenterLabel">Mapped</span>
+                                    </div>
+                                </div>
+                                <div class="donut-legend">
+                                    <div><span class="legend-dot dot-blue"></span><span data-i18n="legendOne">Analysis</span></div>
+                                    <div><span class="legend-dot dot-green"></span><span data-i18n="legendTwo">Optimization</span></div>
+                                    <div><span class="legend-dot dot-gold"></span><span data-i18n="legendThree">Workflow</span></div>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-area hidden" id="llmConfigView">
+                <div class="config-container">
+                    <div class="config-header">
+                        <div class="eyebrow" data-i18n="llmEyebrow">Model operations</div>
+                        <h2 data-i18n="llmHeader">LLM Configuration</h2>
+                        <p class="config-desc" data-i18n="llmDesc">Configure the optional model provider used by the agent analysis features.</p>
+                    </div>
+
+                    <div class="config-card glass-card">
+                        <div class="config-card-header">
+                            <h3 data-i18n="providerCardTitle">Provider</h3>
+                        </div>
+                        <div class="config-card-body">
+                            <div class="form-group">
+                                <label data-i18n="enableLlm">Enable LLM integration</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="llmEnabled" class="toggle-input">
+                                    <label for="llmEnabled" class="toggle-label"></label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label data-i18n="providerLabel">Provider</label>
+                                <select id="llmProvider" class="form-select">
+                                    <option value="default" data-i18n="providerDefault">Default mock client</option>
+                                    <option value="openai">OpenAI</option>
+                                    <option value="pangu">Pangu</option>
+                                    <option value="custom" data-i18n="providerCustom">Custom API</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-card glass-card" id="apiConfigCard">
+                        <div class="config-card-header">
+                            <h3 data-i18n="apiSettingsTitle">API Settings</h3>
+                            <span class="config-badge" id="providerBadge" data-i18n="providerBadgeDefault">Default</span>
+                        </div>
+                        <div class="config-card-body">
+                            <div class="form-group">
+                                <label data-i18n="apiKeyLabel">API Key *</label>
+                                <input type="password" id="llmApiKey" class="form-input" data-i18n-placeholder="apiKeyPlaceholder">
+                                <span class="form-hint" id="apiKeyHint" data-i18n="apiKeyHint">Paste your provider key here.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label data-i18n="apiEndpointLabel">API Endpoint</label>
+                                <input type="text" id="llmApiEndpoint" class="form-input">
+                                <span class="form-hint" data-i18n="apiEndpointHint">Leave blank to use the provider default if supported.</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label data-i18n="modelNameLabel">Model Name</label>
+                                <input type="text" id="llmModel" class="form-input">
+                                <span class="form-hint" id="modelHint" data-i18n="modelHint">Set the model identifier used by your provider.</span>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label data-i18n="timeoutLabel">Timeout (seconds)</label>
+                                    <input type="number" id="llmTimeout" class="form-input" value="30" min="5" max="120">
+                                </div>
+                                <div class="form-group half">
+                                    <label data-i18n="retryLabel">Max retries</label>
+                                    <input type="number" id="llmMaxRetries" class="form-input" value="3" min="0" max="10">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-card glass-card" id="defaultModelInfo" style="display: none;">
+                        <div class="config-card-header">
+                            <h3 data-i18n="defaultNotesTitle">Default Client Notes</h3>
+                        </div>
+                        <div class="config-card-body">
+                            <div class="info-box">
+                                <div class="info-icon">i</div>
+                                <div class="info-content">
+                                    <p data-i18n="defaultNotesLead"><strong>The default mock client</strong> is useful for local demos and UI testing.</p>
+                                    <ul>
+                                        <li data-i18n="defaultNoteOne">No API key required</li>
+                                        <li data-i18n="defaultNoteTwo">Safe for local experimentation</li>
+                                        <li data-i18n="defaultNoteThree">Real providers are still optional in this project</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-actions">
+                        <button class="btn btn-outline" id="testConnectionBtn" type="button">
+                            <span data-i18n="testConnection">Test Connection</span>
+                        </button>
+                        <button class="btn btn-primary" id="saveConfigBtn" type="button">
+                            <span data-i18n="saveConfig">Save Config</span>
+                        </button>
+                    </div>
+
+                    <div class="config-status glass-card" id="configStatus">
+                        <div class="status-item">
+                            <span class="status-label" data-i18n="configStatusLabel">Status:</span>
+                            <span class="status-value" id="currentStatus">Disabled</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label" data-i18n="configProviderLabel">Provider:</span>
+                            <span class="status-value" id="currentProvider">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-area hidden" id="agentLabView">
+                <div class="config-container">
+                    <div class="config-header">
+                        <div class="eyebrow" data-i18n="agentLabEyebrow">Agent design system</div>
+                        <h2 data-i18n="agentLabHeader">Agent Studio</h2>
+                        <p class="config-desc" data-i18n="agentLabDesc">Prototype the ad analysis agent, workflow review loop, and prompt engineering surface in one place.</p>
+                    </div>
+
+                    <section class="studio-metrics">
+                        <div class="studio-metric-card">
+                            <span data-i18n="studioMetricOneLabel">Analysis depth</span>
+                            <strong data-i18n="studioMetricOneValue">5 Layers</strong>
+                        </div>
+                        <div class="studio-metric-card">
+                            <span data-i18n="studioMetricTwoLabel">Optimization scope</span>
+                            <strong data-i18n="studioMetricTwoValue">Bid / Budget / Query</strong>
+                        </div>
+                        <div class="studio-metric-card">
+                            <span data-i18n="studioMetricThreeLabel">Prompt mode</span>
+                            <strong data-i18n="studioMetricThreeValue">Structured</strong>
+                        </div>
+                    </section>
+
+                    <div class="config-card glass-card">
+                        <div class="config-card-header">
+                            <h3 data-i18n="runObjectiveTitle">Run Objective</h3>
+                        </div>
+                        <div class="config-card-body">
+                            <div class="form-group">
+                                <label data-i18n="objectiveLabel">Objective</label>
+                                <textarea id="agentObjective" class="form-input agent-textarea" rows="3" data-i18n-default="objectiveDefault"></textarea>
+                            </div>
+                            <div class="config-actions">
+                                <button class="btn btn-primary" id="runAgentBtn" type="button">
+                                    <span data-i18n="runAgent">Run Agent</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-card glass-card">
+                        <div class="config-card-header">
+                            <h3 data-i18n="promptTemplateTitle">Prompt Template</h3>
+                        </div>
+                        <div class="config-card-body">
+                            <div class="form-group">
+                                <label data-i18n="systemRoleLabel">System Role</label>
+                                <textarea id="promptSystemRole" class="form-input agent-textarea" rows="4"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="taskTemplateLabel">Task Template</label>
+                                <textarea id="promptTaskTemplate" class="form-input agent-textarea" rows="8"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label data-i18n="outputStyleLabel">Output Style</label>
+                                <input type="text" id="promptOutputStyle" class="form-input">
+                            </div>
+                            <div class="config-actions">
+                                <button class="btn btn-outline" id="reloadPromptBtn" type="button">
+                                    <span data-i18n="reloadTemplate">Reload Template</span>
+                                </button>
+                                <button class="btn btn-primary" id="savePromptBtn" type="button">
+                                    <span data-i18n="saveTemplate">Save Template</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-card glass-card">
+                        <div class="config-card-header">
+                            <h3 data-i18n="agentOutputTitle">Agent Run Output</h3>
+                        </div>
+                        <div class="config-card-body">
+                            <div class="agent-grid">
+                                <div class="agent-panel">
+                                    <h4 data-i18n="workflowSteps">Workflow Steps</h4>
+                                    <div id="agentSteps" class="agent-output" data-i18n="agentStepsEmpty">Run the agent to inspect workflow steps.</div>
+                                </div>
+                                <div class="agent-panel">
+                                    <h4 data-i18n="findings">Findings</h4>
+                                    <div id="agentFindings" class="agent-output" data-i18n="findingsEmpty">No findings yet.</div>
+                                </div>
+                                <div class="agent-panel">
+                                    <h4 data-i18n="recommendations">Recommendations</h4>
+                                    <div id="agentRecommendations" class="agent-output" data-i18n="recommendationsEmpty">No recommendations yet.</div>
+                                </div>
+                                <div class="agent-panel">
+                                    <h4 data-i18n="promptPreview">Prompt Preview</h4>
+                                    <div id="agentPrompt" class="agent-output" data-i18n="promptEmpty">No prompt rendered yet.</div>
+                                </div>
+                                <div class="agent-panel">
+                                    <h4 data-i18n="llmOutput">LLM Output</h4>
+                                    <div id="agentLlmOutput" class="agent-output" data-i18n="llmEmpty">No model output yet.</div>
+                                </div>
+                                <div class="agent-panel">
+                                    <h4 data-i18n="nextActions">Next Actions</h4>
+                                    <div id="agentNextActions" class="agent-output" data-i18n="nextActionsEmpty">No next actions yet.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal" id="userModal">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3 id="modalTitle" data-i18n="modalAddUser">Add User</h3>
+                <button class="modal-close" id="closeModal" type="button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <div class="form-group">
+                        <label data-i18n="fieldUsername">Username *</label>
+                        <input type="text" name="username" required data-i18n-placeholder="fieldUsernamePlaceholder">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="fieldEmail">Email *</label>
+                        <input type="email" name="email" required data-i18n-placeholder="fieldEmailPlaceholder">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="fieldPhone">Phone</label>
+                        <input type="tel" name="phone" data-i18n-placeholder="fieldPhonePlaceholder">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="fieldStatus">Status</label>
+                        <select name="status">
+                            <option value="active" data-i18n="statusActive">Active</option>
+                            <option value="inactive" data-i18n="statusInactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="fieldTags">Tags (comma separated)</label>
+                        <input type="text" name="tags" data-i18n-placeholder="fieldTagsPlaceholder">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" id="cancelModal" type="button" data-i18n="cancel">Cancel</button>
+                <button class="btn btn-primary" id="submitModal" type="button" data-i18n="save">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/ui/app.js"></script>
+</body>
+</html>
