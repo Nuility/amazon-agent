@@ -1,0 +1,34 @@
+source:
+  repo: https://github.com/CopilotKit/CopilotKit
+  extraction_mode: dependency_and_pattern_reference
+
+use_as_dependency:
+  - package_family: "@copilotkit/*"
+    reason: React agent UI、runtime 和 action 接入能力
+
+reference_only:
+  - path: packages
+    reason: 理解 CopilotKit 组件、runtime、协议和 SDK 拆分
+  - path: examples
+    reason: 查找 chat sidebar、generative UI、human-in-the-loop、shared state 示例
+  - path: docs
+    reason: 后续融合时确认最新 API 用法
+
+capabilities_to_extract:
+  - chat_sidebar
+  - frontend_actions
+  - generative_ui
+  - shared_state
+  - human_confirmation
+  - agent_runtime_bridge
+
+do_not_copy:
+  - monorepo_build_config
+  - unrelated_examples
+  - docs_site
+  - release_scripts
+
+future_target:
+  frontend: 目标 agent 项目的 React UI 层
+  backend: 广告 agent API 网关或工具执行层
+

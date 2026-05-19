@@ -1,0 +1,53 @@
+name: copilotkit-ui-events
+version: 0.1.0
+purpose: 定义广告 Agent 前端与后端工具调用之间的 UI 事件约定
+
+events:
+  context_changed:
+    direction: ui_to_agent
+    payload:
+      shop_id: string
+      marketplace_id: string
+      profile_id: string
+      selected_entity_type: string
+      selected_entity_id: string
+      date_range:
+        start: string
+        end: string
+
+  tool_started:
+    direction: agent_to_ui
+    payload:
+      tool_name: string
+      input_summary: string
+
+  report_ready:
+    direction: agent_to_ui
+    payload:
+      title: string
+      summary: string
+      rows: object[]
+      metrics: object
+
+  optimization_proposed:
+    direction: agent_to_ui
+    payload:
+      proposals: object[]
+      risk_level: low|medium|high
+
+  confirmation_required:
+    direction: agent_to_ui
+    payload:
+      proposal_id: string
+      action_summary: string
+      old_value: object
+      new_value: object
+      rollback_hint: string
+
+  optimization_applied:
+    direction: agent_to_ui
+    payload:
+      proposal_id: string
+      status: success|failed|partial
+      audit_log_id: string
+

@@ -1,0 +1,94 @@
+name: advertising-agent-contract
+version: 0.1.0
+purpose: 为后续 agent 项目定义广告投放工具层的最小公共契约
+
+context:
+  required:
+    tenant_id: string
+    user_id: string
+    shop_id: string
+    marketplace_id: string
+    profile_id: string
+  optional:
+    timezone: string
+    currency: string
+    date_range:
+      start: string
+      end: string
+
+tools:
+  list_campaigns:
+    mode: read
+    input:
+      state: string
+      ad_type: string
+      name_keyword: string
+    output:
+      campaigns: Campaign[]
+
+  get_performance_report:
+    mode: read
+    input:
+      entity_type: campaign|ad_group|keyword|targeting|product_ad|search_term
+      entity_ids: string[]
+      date_range:
+        start: string
+        end: string
+    output:
+      rows: PerformanceRow[]
+      summary: PerformanceMetrics
+
+  propose_optimizations:
+    mode: analysis
+    input:
+      objective: lower_acos|increase_sales|control_budget|discover_keywords
+      constraints: object
+    output:
+      proposals: OptimizationProposal[]
+
+  apply_optimization:
+    mode: guarded_write
+    requires_confirmation: true
+    input:
+      proposal_id: string
+      approved_by: string
+    output:
+      status: success|failed|partial
+      audit_log_id: string
+
+types:
+  Campaign:
+    id: string
+    name: string
+    ad_type: string
+    state: string
+    budget: decimal
+    bidding_strategy: string
+
+  PerformanceMetrics:
+    impressions: integer
+    clicks: integer
+    spend: decimal
+    sales: decimal
+    orders: integer
+    acos: decimal
+    roas: decimal
+    ctr: decimal
+    cpc: decimal
+    cvr: decimal
+
+  PerformanceRow:
+    entity_id: string
+    entity_name: string
+    metrics: PerformanceMetrics
+
+  OptimizationProposal:
+    id: string
+    risk_level: low|medium|high
+    action_type: pause|enable|change_budget|change_bid|add_keyword|negate_keyword|add_targeting
+    target_entity_id: string
+    old_value: object
+    new_value: object
+    reason: string
+    expected_impact: string
+

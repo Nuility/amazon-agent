@@ -1,0 +1,51 @@
+source:
+  repo: https://github.com/wimoor-erp/wimoor
+  primary_module: wimoor-amazon-adv
+  extraction_mode: module_closure
+
+include:
+  required:
+    - path: wimoor-amazon-adv/pom.xml
+      reason: 广告模块 Maven 依赖入口
+    - path: wimoor-amazon-adv/amazon-adv-api
+      reason: 广告领域实体、Mapper、Service API、DTO/VO 来源
+    - path: wimoor-amazon-adv/amazon-adv-boot
+      reason: 广告 Controller、Service 实现、Amazon Advertising API 调用来源
+  dependency_candidates:
+    - path: wimoor-common
+      reason: 公共返回体、分页、异常、工具、基础注解
+    - path: wimoor-system
+      reason: 用户、权限、组织或系统上下文
+    - path: wimoor-amazon
+      reason: 店铺、站点、Amazon profile、授权上下文
+    - path: pom.xml
+      reason: 父级 Maven 版本管理和模块聚合
+
+exclude_by_default:
+  - wimoor-erp
+  - wimoor-admin
+  - wimoor-finance
+  - wimoor-inventory
+  - wimoor-purchase
+  - wimoor-warehouse
+  - wimoor-order
+
+important_domains:
+  - campaign
+  - ad_group
+  - product_ad
+  - keyword
+  - targeting
+  - negative_keyword
+  - budget
+  - bid
+  - report
+  - summary
+  - profile
+  - marketplace
+  - shop
+
+future_copy_target:
+  root: integration_pack/wimoor-advertising/source
+  note: 网络恢复后复制源码快照；当前包先保留清单、契约和融合说明。
+

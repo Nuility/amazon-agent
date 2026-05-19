@@ -1,0 +1,52 @@
+app:
+  name: "Amazon Agent"
+  version: "2.2.0"
+  debug: false
+  
+server:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  
+llm:
+  provider: "minimax"
+  minimax:
+    api_key: "${MINIMAX_API_KEY}"
+    endpoint: "https://api.minimax.chat/v1/text/chatcompletion_v2"
+    timeout: 30
+    max_retries: 3
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4"
+    timeout: 30
+  mock:
+    enabled: false
+    
+storage:
+  type: "json"
+  json:
+    data_dir: "data"
+    session_file: "sessions.json"
+    skill_file: "skills.json"
+    
+dialog:
+  max_context_messages: 20
+  max_context_size_kb: 10
+  session_timeout_minutes: 30
+  streaming_chunk_size: 100
+  streaming_interval_ms: 100
+  
+skill:
+  execution_timeout_seconds: 30
+  max_concurrent_executions: 10
+  
+logging:
+  level: "INFO"
+  format: "json"
+  file: "logs/app.log"
+  max_size_mb: 100
+  backup_count: 10
+  sensitive_fields:
+    - "api_key"
+    - "token"
+    - "password"
